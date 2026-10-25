@@ -6,7 +6,7 @@ hospedada num endereço https:// (abrir o arquivo direto do celular não instala
 OPÇÃO 1 - GitHub Pages (grátis, fica no ar permanentemente)
  1. Entre em github.com com a sua conta e crie um repositório (ex.: checklist-campo).
  2. "Add file" > "Upload files": arraste TODO o conteúdo desta pasta
-    (index.html, sw.js, manifest.webmanifest e as pastas icons e vendor). Clique em "Commit".
+    (index.html, sw.js, manifest.webmanifest, fonts.css e as pastas icons, vendor e fonts). Clique em "Commit".
  3. Settings > Pages > Source: "Deploy from a branch", branch "main", pasta "/ (root)" > Save.
  4. Em 1 a 2 minutos o link aparece no topo da página (https://SEU-USUARIO.github.io/checklist-campo/).
  Atenção: repositório público deixa o link acessível a quem souber o endereço.
