@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#15202B">
+<meta name="description" content="Checklists de inspeÃ§Ã£o, preventiva (MTM) e corretiva com fotos e relatÃ³rio em PDF.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Checklist">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body><title>Checklist de Campo GPBR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: ferramenta de campo de uma coluna; barra superior fixa com progresso, cartões por seção, barra de ação inferior. */
+:root{
+  --bg:#EDF0EF; --surface:#FFFFFF; --sunk:#F4F6F5; --ink:#15202B; --muted:#5A6770; --line:#D3DAD8;
+  --accent:#D9640A; --accent-ink:#FFFFFF; --accent-soft:#FBE9DA;
+  --ok:#1D8549; --warn:#B87D00; --bad:#BF3328; --na:#6F7B82;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px; --bar:#15202B; --bar-2:#24313A;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1417; --surface:#172026; --sunk:#111A1F; --ink:#E6ECEA; --muted:#93A1A8; --line:#2A373E;
+  --accent:#F08B32; --accent-ink:#1A0F05; --accent-soft:#3A2614;
+  --ok:#3DBA72; --warn:#E3AE2B; --bad:#EE6A5E; --na:#8E9AA1; --bar:#080C0E; --bar-2:#1C262C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1417; --surface:#172026; --sunk:#111A1F; --ink:#E6ECEA; --muted:#93A1A8; --line:#2A373E;
+  --accent:#F08B32; --accent-ink:#1A0F05; --accent-soft:#3A2614;
+  --ok:#3DBA72; --warn:#E3AE2B; --bad:#EE6A5E; --na:#8E9AA1; --bar:#080C0E; --bar-2:#1C262C; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bar)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* barra superior */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bar);color:#F2F5F4;border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:10px;padding-block:10px;min-height:56px}
+.top h1{font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.02em;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.top h1 small{display:block;font-family:var(--body);font-weight:500;font-size:12px;letter-spacing:.04em;opacity:.7;text-transform:none}
+.icon-btn{background:transparent;border:1px solid rgba(255,255,255,.22);color:inherit;border-radius:8px;min-width:42px;height:40px;display:inline-grid;place-items:center;padding:0 10px;font-weight:600;font-size:14px}
+.icon-btn svg{width:20px;height:20px}
+.prog{height:4px;background:rgba(255,255,255,.15)}
+.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.jump{background:var(--bar-2);color:#F2F5F4;border:0;border-radius:8px;height:40px;max-width:46%;padding:0 8px;font-size:14px}
+
+main{padding-bottom:120px}
+
+/* home */
+.intro{padding-block:22px 6px}
+.intro h2{font-family:var(--display);font-size:30px;line-height:1.05;margin:0 0 6px;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+.intro p{margin:0;color:var(--muted);max-width:60ch}
+.grp-t{font-family:var(--display);font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px;display:flex;align-items:center;gap:10px}
+.grp-t::after{content:"";flex:1;height:1px;background:var(--line)}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.tpl{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 12px;min-height:96px;transition:border-color .15s,transform .1s}
+.tpl:hover{border-color:var(--accent)}
+.tpl:active{transform:scale(.99)}
+.tpl b{font-family:var(--display);font-size:21px;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+.tpl span{color:var(--muted);font-size:13.5px}
+.tpl .tag{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:var(--accent-soft);color:var(--accent)}
+.saved{display:flex;flex-direction:column;gap:8px}
+.rep{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.rep .t{font-weight:600;min-width:0}
+.rep .m{grid-column:1;color:var(--muted);font-size:13px;font-family:var(--mono)}
+.rep .acts{grid-row:1/span 2;grid-column:2;display:flex;gap:6px}
+.pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:2px}
+.pill.draft{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.pill.done{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.install{display:flex;gap:12px;align-items:center;margin-top:16px;padding:12px 14px;border-radius:var(--r);background:var(--accent-soft);border:1px solid var(--accent)}
+.install div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.install span{font-size:13.5px;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:14px;border:1px dashed var(--line);border-radius:var(--r)}
+
+/* botões */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;min-height:44px;padding:0 14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.sm{min-height:36px;padding:0 10px;font-size:14px}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad)}
+.btn svg{width:18px;height:18px;flex:none}
+
+/* formulário */
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-top:14px;scroll-margin-top:calc(80px + env(safe-area-inset-top,0px))}
+.sec>h3{margin:0;padding:12px 14px;font-family:var(--display);font-size:19px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline}
+.sec>h3 .n{color:var(--accent);font-variant-numeric:tabular-nums}
+.sec>h3 .c{margin-left:auto;font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}
+.sec-b{padding:14px;display:flex;flex-direction:column;gap:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f>label,.lbl{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.f .req::after,.lbl.req::after{content:" *";color:var(--accent)}
+input[type=text],input[type=date],input[type=time],input[type=number],textarea,select.inp{width:100%;min-height:46px;border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:10px 12px;font-size:16px}
+textarea{min-height:92px;resize:vertical}
+input.mono{font-family:var(--mono)}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.miss{border-color:var(--bad)!important}
+
+.intro-line{margin:0;color:var(--muted);font-size:14px}
+.items{display:flex;flex-direction:column}
+.item{padding:12px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;scroll-margin-top:calc(90px + env(safe-area-inset-top,0px))}
+.item:first-child{border-top:0;padding-top:0}
+.item-h{display:flex;gap:10px;align-items:flex-start;font-weight:600}
+.sn{font-family:var(--mono);font-size:13px;color:var(--muted);min-width:24px;padding-top:2px;font-variant-numeric:tabular-nums}
+.item-h .it{flex:1;min-width:0}
+.item-h input{font-weight:600}
+.seg{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:6px}
+.seg.wide{grid-template-columns:repeat(2,1fr)}
+.seg button{min-height:44px;border:1px solid var(--line);background:var(--sunk);border-radius:8px;font-weight:600;font-size:14.5px;padding:4px 6px;line-height:1.15}
+.seg button.on{color:#fff;border-color:transparent}
+.seg button.on.ok{background:var(--ok)} .seg button.on.warn{background:var(--warn)} .seg button.on.bad{background:var(--bad)} .seg button.on.na{background:var(--na)}
+:root[data-theme="dark"] .seg button.on,:root:not([data-theme="light"]) .seg button.on{color:#fff}
+.row-obs{display:grid;grid-template-columns:1fr;gap:8px}
+.row-obs.read{grid-template-columns:130px 1fr}
+.reading{display:flex;align-items:center;gap:6px}
+.reading input{font-family:var(--mono)}
+.reading span{font-family:var(--mono);color:var(--muted);font-size:14px;min-width:22px}
+.obs.need{border-color:var(--warn)}
+
+.act{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.act:first-child{border-top:0}
+.act input[type=checkbox]{width:24px;height:24px;accent-color:var(--accent);flex:none}
+.act label{flex:1;min-width:0}
+.act .reading{width:130px;flex:none}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--sunk);border-radius:99px;min-height:40px;padding:0 14px;font-size:14px;font-weight:600}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+.team-row{display:grid;grid-template-columns:1fr 92px;gap:8px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--sunk)}
+.team-row .nm{grid-column:1/-1;display:flex;gap:8px}
+.team-row .nm input{flex:1;min-width:0}
+.team-row .hrs{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.team-row input{background:var(--surface)}
+
+.pgroup{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--sunk);scroll-margin-top:calc(90px + env(safe-area-inset-top,0px))}
+.pgroup.need{border-color:var(--warn)}
+.pg-h{display:flex;gap:8px;align-items:baseline;font-weight:600}
+.pg-h span:first-child{flex:1;min-width:0}
+.pg-h .cnt{font-size:12.5px;color:var(--muted);font-weight:600;white-space:nowrap}
+.pg-h .cnt.zero{color:var(--warn)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.thumbs:empty{display:none}
+.th{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.th .im{position:relative;aspect-ratio:4/3;background:#000;max-width:100%}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .del{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:99px;border:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center}
+.th .del svg{width:16px;height:16px}
+.th input{border:0;border-top:1px solid var(--line);border-radius:0;min-height:40px;font-size:14px;background:var(--surface)}
+.pg-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* barra inferior */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.bar .wrap{display:flex;gap:10px;padding-block:10px}
+.bar .btn{flex:1}
+.bar .status{font-size:12px;color:var(--muted);align-self:center;white-space:nowrap}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:40;background:rgba(8,12,14,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:88%;overflow:auto;border-radius:14px 14px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+@media (min-width:600px){.modal{align-items:center}.sheet{border-radius:14px}}
+.sheet h3{margin:0;font-family:var(--display);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.sheet p{margin:0;color:var(--muted)}
+.sheet .acts{display:flex;gap:8px;flex-wrap:wrap}
+.sheet .acts .btn{flex:1 1 140px}
+.misslist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;max-height:46vh;overflow:auto}
+.misslist li button{width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:10px 12px;font-size:14.5px;display:flex;gap:8px}
+.misslist li:first-child button{border-top:0}
+.misslist small{color:var(--muted);margin-left:auto;white-space:nowrap}
+.pdfdone{display:flex;gap:12px;align-items:center;padding:12px;border-radius:8px;background:var(--sunk);border:1px solid var(--line)}
+.pdfdone svg{width:34px;height:34px;color:var(--accent);flex:none}
+.pdfdone b{display:block;word-break:break-all;font-size:14px}
+.pdfdone span{font-size:13px;color:var(--muted)}
+.logo-slot{display:flex;gap:10px;align-items:center}
+.logo-slot .pv{width:110px;height:44px;border:1px dashed var(--line);border-radius:6px;display:grid;place-items:center;background:#fff;overflow:hidden;font-size:11px;color:#7a858c}
+.logo-slot .pv img{max-width:100%;max-height:100%}
+.switch{display:flex;gap:10px;align-items:center;font-weight:500}
+.switch input{width:22px;height:22px;accent-color:var(--accent)}
+
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:14px;font-weight:600;max-width:calc(100% - 32px);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.busy{position:fixed;inset:0;z-index:60;background:rgba(8,12,14,.6);display:grid;place-items:center;color:#fff;font-weight:600}
+.busy div{display:flex;flex-direction:column;align-items:center;gap:12px}
+.spin{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:2s!important}}
+</style>
+
+<header class="top">
+  <div class="wrap" id="topbar"></div>
+  <div class="prog" id="prog" hidden><i></i></div>
+</header>
+<main id="view"></main>
+<div class="bar" id="bar" hidden>
+  <div class="wrap">
+    <span class="status" id="saveState">Salvo</span>
+    <button class="btn pri" id="finish" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+      Finalizar e gerar PDF
+    </button>
+  </div>
+</div>
+<div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"></div>
+<div class="busy" id="busy" hidden><div><span class="spin"></span><span id="busyTxt">Gerando PDF…</span></div></div>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+<input type="file" id="galIn" accept="image/*" multiple hidden>
+<input type="file" id="logoIn" accept="image/*" hidden>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script>
+"use strict";
+/* ============ Modelos (extraídos dos .docx de padronização Dynaway) ============ */
+const ST4 = ["Bom","Reparar","Substituir","N/D"];
+const TONE = {"Bom":"ok","Reparar":"warn","Substituir":"bad","N/D":"na","Sim":"ok","Não":"bad","Operante":"ok","Operante com restrição":"warn","Inoperante":"bad","Aguardando suporte de outra equipe":"na","Realizada":"ok"};
+
+const SOLAR = ["Limpeza dos painéis solares","Reaperto do painel elétrico","Teste dos componentes (DC/DC, inversor, controlador)",{t:"Verificar tensão do banco de baterias",unit:"V"},"Verificar condição dos polos das baterias","Checar conectores MC4 dos painéis solares","Checar limpeza e conservação do container"];
+const SOLAR_PH = ["Limpeza dos painéis solares","Tensão do banco de baterias","Condição dos polos das baterias"];
+const SOFTWARE = ["Verificar processamento de dados","Verificar se há atualizações de software disponíveis","Verificar atualização em tempo real","Verificar licenças do sistema","Verificar espaço em disco","Verificar atualizações do Windows","Realizar limpeza de logs","Verificar data quality"];
+const FINAL = {type:"final", title:"Informações adicionais"};
+const EXTRA = {type:"photos", title:"Fotos adicionais", groups:["Outras evidências"], free:true, optional:true};
+const T_PREV = "RELATÓRIO DE MANUTENÇÃO PREVENTIVA GROUNDPROBE";
+const T_INSP = "RELATÓRIO DE INSPEÇÃO GROUNDPROBE";
+const T_CORR = "RELATÓRIO DE MANUTENÇÃO CORRETIVA GROUNDPROBE";
+
+function inspecao(id, name, modelo, acts){
+  return {id, kind:"Inspeção", name, short:"Inspecao_"+modelo, title:T_INSP, modelo, modelos:["SARx","RAR","Doppler"], sections:[
+    {type:"activities", title:"Atividades realizadas", intro:"Foram realizadas as seguintes atividades:", items:acts},
+    {type:"fields", title:"Atrasos e pendências", fields:[{id:"atrasos",label:"Atrasos",def:"N/A"},{id:"pendencias",label:"Pendências",def:"N/A"}]},
+    {type:"photos", title:"Fotos e evidências", groups:["Registro fotográfico"], free:true},
+    FINAL, ]};
+}
+
+const TEMPLATES = [
+  {id:"mtm-doppler", kind:"Preventiva", name:"MTM Doppler", short:"MTM_Doppler", title:T_PREV, modelo:"Doppler", modelos:["Doppler"], sections:[
+    {type:"checklist", title:"Radar", items:["Instalações físicas do radar","Condições dos cabeamentos do sistema","Condições do aterramento do sistema","Limpeza e conservação do radar","Condições da PU","Condições da antena do radar","Verificar imagem, alinhamento e condições da câmera","Checar comunicação entre os dispositivos de rede","Checar condições dos componentes do radar"],
+      photos:["Instalações físicas do radar","Condições dos cabeamentos do sistema","Condições do aterramento do sistema","Organização do container","PU e laptop","Antena","Câmera","Adapter box, watchdog, cofre e cabeamentos"]},
+    {type:"checklist", title:"Sistema solar", items:SOLAR, photos:SOLAR_PH},
+    {type:"checklist", title:"Software", items:SOFTWARE, photos:[]},
+    FINAL, EXTRA]},
+  {id:"mtm-sarx", kind:"Preventiva", name:"MTM SARx", short:"MTM_SARx", title:T_PREV, modelo:"SARx", modelos:["SARx"], sections:[
+    {type:"checklist", title:"Radar", items:["Instalações físicas do radar","Condições dos cabeamentos do sistema","Condições do aterramento do sistema","Limpeza e conservação do radar","Nivelamento do radar","Condições da WS do radar","Verificar imagem e alinhamento da câmera","Checar comunicação entre os dispositivos de rede","Checar alimentação e estado do sensor de posição"],
+      photos:["Instalações físicas do radar","Condições dos cabeamentos do sistema","Condições do aterramento do sistema","Organização do container","Filtros da MH e da PB","WS (Weather Station)","Câmera","Correia do LP","Sensor de posição"]},
+    {type:"checklist", title:"Sistema solar", items:SOLAR, photos:SOLAR_PH},
+    {type:"checklist", title:"Software", items:SOFTWARE, photos:[]},
+    FINAL, EXTRA]},
+  {id:"mtm-series", kind:"Preventiva", name:"MTM Series 2, 3 & 5", short:"MTM_Series", title:T_PREV, modelo:"", modelos:["FX","XT"], sections:[
+    {type:"checklist", title:"Radar", items:["Instalações físicas do radar","Condições dos cabeamentos do sistema","Condições do aterramento do sistema","Limpeza e conservação do radar","Nivelamento do radar","Condições da Weather Station","Verificar limpeza e alinhamento da câmera","Checar comunicação entre os dispositivos de rede","Checar alimentação e estado da REM","Condições gerais da praça de monitoramento","Condições da antena do radar"],
+      photos:["Instalações físicas do radar","Condições dos cabeamentos do sistema","Condições do aterramento do sistema","Organização da praça de monitoramento","Nivelamento do radar","Weather Station","Câmera","Tool box","R.E.M"]},
+    {type:"checklist", title:"Sistema solar", items:["Limpeza dos painéis solares","Reaperto das conexões elétricas","Teste dos componentes (DC/DC, inversor, controlador)",{t:"Verificar tensão do banco de baterias",unit:"V"},"Verificar condição dos polos das baterias","Checar conectores MC4 dos painéis solares","Checar limpeza e conservação do sistema"], photos:SOLAR_PH},
+    {type:"checklist", title:"Software", items:["Verificar processamento de dados",{t:"Versão do software instalado",unit:"ver."},"Verificar atualização em tempo real","Verificar licenças do sistema","Verificar espaço em disco","Verificar atualizações do Windows","Realizar limpeza de logs","Verificar data quality"], photos:[]},
+    {type:"checklist", title:"Manutenção de trailer", items:["Verificar integridade física do trailer","Limpeza do trailer"], photos:["Trailer"]},
+    {type:"checklist", title:"RAPS", items:["Inspeção da parte física","Inspeção do motor","Limpeza/organização do interior da RAPS","Inspeção do cano de descarga","Inspeção da solenoide do acelerador","Nível dos fluidos do motor","Inspeção das mangueiras e tubulações","Inspeção do sistema elétrico"],
+      photos:["Parte física","Parte interna","Filtros","Mangueiras e abraçadeiras","Conexões elétricas"]},
+    FINAL, EXTRA]},
+  inspecao("insp-doppler","Inspeção Doppler","Doppler",["Realizar limpeza interna do container","Inspecionar a condição geral do container","Inspecionar tubulações e cabos que interconectam os equipamentos","Inspecionar hastes de aterramento do sistema e suas conexões","Verificar presença de vegetação que possa interferir no funcionamento dos equipamentos","Realizar limpeza e organização da praça de monitoramento",{t:"Registrar valor de tensão do banco de baterias",unit:"V"},{t:"Registrar valor de corrente total das placas solares",unit:"A"},"Verificar a instalação física das placas","Inspecionar painel elétrico","Realizar limpeza das placas","Verificar organização, conexões e condição dos cabos em geral","Inspecionar o aperto das conexões internas da PU",{t:"Verificar temperatura interna da PU",unit:"°C"},"Limpar a lente da câmera","Inspecionar dutos de ventilação do cofre"]),
+  inspecao("insp-rar","Inspeção RAR","RAR",["Realizar limpeza e lubrificação das partes móveis do radar","Realizar limpeza e inspecionar painel elétrico","Realizar limpeza das placas solares","Inspecionar tubulações e cabos que interconectam os equipamentos","Inspecionar hastes de aterramento do sistema e suas conexões","Verificar presença de vegetação que possa interferir no funcionamento dos equipamentos","Realizar limpeza e organização da praça de monitoramento","Realizar limpeza da lente da câmera","Verificar instalação da Weather Station","Verificação e limpeza de todos os componentes eletrônicos","Verificação de componentes de desgaste","Verificação de esteira porta-cabos e conexões entre Major"]),
+  inspecao("insp-sarx","Inspeção SARx","SARx",["Realizar limpeza e lubrificação das partes móveis do radar","Realizar limpeza e conferência do Flexible Radome","Verificar condições gerais do container","Realizar limpeza e inspecionar painel elétrico","Realizar limpeza das placas solares","Organizar tubulações e cabos que interconectam os equipamentos","Inspecionar hastes de aterramento do sistema e suas conexões","Verificar presença de vegetação que possa interferir no funcionamento dos equipamentos","Realizar limpeza e organização da praça de monitoramento","Realizar limpeza da lente da câmera","Verificar instalação da Weather Station","Verificação e limpeza de todos os componentes eletrônicos","Realizar limpeza e verificação do Linear Positioner","Verificação de componentes de desgaste (correia, trilhos, esteiras etc.)","Verificação de esteira porta-cabos e conexões entre Major"]),
+  {id:"corretiva", kind:"Corretiva", name:"Corretiva geral", short:"Corretiva", title:T_CORR, modelo:"", modelos:["SARx","RAR","Doppler","FX","XT"], sections:[
+    {type:"fields", title:"Atividade realizada", fields:[
+      {id:"falha",label:"Falha identificada",area:true,req:true,ph:"Foi identificado… (causa e como chegou neste diagnóstico)"},
+      {id:"acao",label:"Ação corretiva",area:true,req:true,ph:"Foi realizada… (o que foi feito e se houve substituição de peça)"},
+      {id:"impacto",label:"Impacto",area:true,ph:"Devido à falha houve… (ex.: indisponibilidade, perda de dados)"}]},
+    {type:"chips", title:"Classe de falha", req:true, options:["Alimentação","Avaria","Curto-circuito","Descalibração","Erro de leitura","Fixação dos cabos/conexão","Limpeza","Travamento","Oxidação","Obstrução","Rompimento de cabo","Quebra","Bugs","Outros"]},
+    {type:"fields", title:"Status do radar após intervenção", fields:[
+      {id:"status",label:"Status",req:true,choice:["Operante","Operante com restrição","Inoperante","Aguardando suporte de outra equipe"]},
+      {id:"statusObs",label:"Detalhes",area:true,ph:"Complemento do status (opcional)"}]},
+    {type:"photos", title:"Fotos e evidências", groups:["Registro fotográfico"], free:true},
+    {type:"fields", title:"Observações adicionais", fields:[{id:"obsAd",label:"Observações",area:true}]} ]},
+];
+const YN_INV = {"Sim":"warn","Não":"ok"};  // em "manutenção adicional?" e "pendência?", Sim é o alerta
+const tplById = id => TEMPLATES.find(t => t.id === id);
+const norm = it => typeof it === "string" ? {t:it} : it;
+
+/* ============ utilidades ============ */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36);
+const today = () => { const d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const fmtDate = s => { if(!s) return ""; const [y,m,d] = s.split("-"); return d+"/"+m+"/"+y; };
+const fmtDT = ts => new Date(ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const ICON = {
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+  gal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
+};
+let toastT;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
+function busy(on, txt){ $("#busy").hidden=!on; if(txt) $("#busyTxt").textContent=txt; }
+
+/* ============ armazenamento local (IndexedDB, com fallback em memória) ============ */
+const mem = new Map();
+let idb = null;
+const idbReady = new Promise(res => {
+  try {
+    const rq = indexedDB.open("checklist-campo", 1);
+    rq.onupgradeneeded = () => rq.result.createObjectStore("reports", {keyPath:"id"});
+    rq.onsuccess = () => { idb = rq.result; res(); };
+    rq.onerror = () => res();
+  } catch(e){ res(); }
+});
+function tx(mode, fn){
+  return idbReady.then(() => new Promise((res, rej) => {
+    const out = r => r && r.result !== undefined ? r.result : r;
+    if(!idb) return res(out(fn(null)));
+    try { const t = idb.transaction("reports", mode); const st = t.objectStore("reports"); const r = fn(st); t.oncomplete = () => res(out(r)); t.onerror = () => rej(t.error); }
+    catch(e){ res(out(fn(null))); }
+  }));
+}
+const dbAll = () => tx("readonly", st => st ? st.getAll() : {result:[...mem.values()]}).then(r => (r||[]).sort((a,b)=>b.updatedAt-a.updatedAt)).catch(()=>[...mem.values()]);
+const dbPut = r => { mem.set(r.id, r); return tx("readwrite", st => st && st.put(r)).catch(()=>{}); };
+const dbDel = id => { mem.delete(id); return tx("readwrite", st => st && st.delete(id)).catch(()=>{}); };
+
+const SKEY = "checklist-campo.settings";
+let settings = {resp:"", empresa:"GPBR", stamp:true, logoL:null, logoR:null};
+try { Object.assign(settings, JSON.parse(localStorage.getItem(SKEY) || "{}")); } catch(e){}
+function saveSettings(){ try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch(e){ toast("Não foi possível guardar os ajustes neste navegador"); } }
+
+/* capacidade de download do Claude (quando aberto como artifact) */
+const inClaude = !!(window.claude && window.claude.use);
+const dlPromise = inClaude ? window.claude.use("downloads").catch(()=>null) : Promise.resolve(null);
+
+/* instalação na tela inicial (só na versão hospedada; no Claude esses eventos não acontecem) */
+let installEvt = null;
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; if(!R) renderHome(); });
+window.addEventListener("appinstalled", () => { installEvt = null; toast("App instalado na tela inicial"); if(!R) renderHome(); });
+function installHTML(){
+  if(inClaude || standalone) return "";
+  if(installEvt) return `<div class="install"><div><b>Instale o app no celular</b><span>Abre pela tela inicial e funciona sem internet.</span></div><button class="btn pri sm" data-act="install" type="button">Instalar</button></div>`;
+  if(isIOS) return `<div class="install"><div><b>Instale o app no iPhone</b><span>No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.</span></div></div>`;
+  return "";
+}
+if(!inClaude && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+
+/* ============ estado ============ */
+let R = null;           // relatório aberto
+let saveTimer = null;
+function newReport(tid){
+  const T = tplById(tid);
+  const r = {id:uid(), templateId:tid, createdAt:Date.now(), updatedAt:Date.now(), status:"rascunho",
+    header:{resp:settings.resp||"", om:"", local:"", data:today(), tag:"", modelo:T.modelo},
+    team:[{nome:settings.resp||"", empresa:settings.empresa||"GPBR", inicio:"", fim:""}],
+    answers:{}, extra:{}, acts:{}, texts:{}, chips:[], chipOutro:"", photos:{}, final:{}};
+  T.sections.forEach((s, si) => {
+    if(s.type==="activities") s.items.forEach((_, ii) => r.acts["s"+si+"i"+ii] = {done:true, val:""});
+    if(s.type==="fields") s.fields.forEach(f => { if(f.def) r.texts[f.id] = f.def; });
+  });
+  return r;
+}
+function touch(){
+  R.updatedAt = Date.now();
+  $("#saveState").textContent = "Salvando…";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => { await dbPut(R); $("#saveState").textContent = "Salvo"; }, 500);
+  updateProgress();
+}
+function getPath(o, p){ return p.split(".").reduce((a,k) => a == null ? a : a[k], o); }
+function setPath(o, p, v){ const ks = p.split("."); let a = o; ks.slice(0,-1).forEach(k => { if(a[k] == null) a[k] = {}; a = a[k]; }); a[ks[ks.length-1]] = v; }
+
+/* ============ progresso / pendências ============ */
+function audit(r){
+  const T = tplById(r.templateId), miss = []; let total = 0, done = 0;
+  const chk = (ok, label, anchor) => { total++; if(ok) done++; else miss.push({label, anchor}); };
+  const h = r.header;
+  chk(h.resp, "Responsável técnico", "f-resp"); chk(h.om, "Número da OM", "f-om"); chk(h.local, "Localidade", "f-local");
+  chk(h.data, "Data de execução", "f-data"); chk(h.tag, "TAG do radar", "f-tag"); chk(h.modelo, "Modelo do radar", "f-modelo");
+  chk(r.team.some(m => m.nome && m.inicio && m.fim), "Equipe: nome e horários", "sec-team");
+  T.sections.forEach((s, si) => {
+    if(s.type==="checklist"){
+      s.items.forEach((it, ii) => { const k="s"+si+"i"+ii; chk(r.answers[k]?.status, s.title+": "+norm(it).t, "it-"+k); });
+      (r.extra["s"+si]||[]).forEach(x => chk(r.answers[x.k]?.status && x.t, s.title+": item adicional", "it-"+x.k));
+      s.photos.forEach((g, gi) => { const k="s"+si+"g"+gi; chk((r.photos[k]||[]).length, "Foto: "+g, "pg-"+k); });
+    }
+    if(s.type==="photos" && !s.optional) s.groups.forEach((g, gi) => { const k="s"+si+"g"+gi; chk((r.photos[k]||[]).length, s.title+": ao menos 1 foto", "pg-"+k); });
+    if(s.type==="fields") s.fields.filter(f=>f.req).forEach(f => chk((r.texts[f.id]||"").trim(), s.title+": "+f.label, "f-"+f.id));
+    if(s.type==="chips" && s.req) chk(r.chips.length, "Classe de falha", "sec-"+si);
+    if(s.type==="final"){ chk(r.final.omFin, "OM finalizada?", "fin-omFin"); chk(r.final.cond, "Condição geral do radar", "fin-cond"); chk(r.final.manut, "Manutenção adicional?", "fin-manut"); chk(r.final.pend, "Há pendência?", "fin-pend"); }
+  });
+  return {total, done, miss};
+}
+function updateProgress(){
+  if(!R) return;
+  const a = audit(R); const pct = a.total ? Math.round(a.done/a.total*100) : 0;
+  $("#prog i").style.width = pct+"%";
+  const c = $("#pct"); if(c) c.textContent = pct+"% preenchido";
+}
+
+/* ============ topo ============ */
+function renderTop(mode){
+  const tb = $("#topbar");
+  if(mode==="home"){
+    tb.innerHTML = `<h1>Checklist de campo<small>Inspeção · Preventiva · Corretiva</small></h1>
+      <button class="icon-btn" data-act="settings" aria-label="Ajustes" type="button">${ICON.gear}</button>`;
+    $("#prog").hidden = true; $("#bar").hidden = true;
+  } else {
+    const T = tplById(R.templateId);
+    const opts = sectionsOf(T).map(s => `<option value="${s.anchor}">${esc(s.label)}</option>`).join("");
+    tb.innerHTML = `<button class="icon-btn" data-act="home" aria-label="Voltar para o início" type="button">${ICON.back}</button>
+      <h1>${esc(T.name)}<small id="pct"></small></h1>
+      <select class="jump" id="jump" aria-label="Ir para seção"><option value="">Seções</option>${opts}</select>`;
+    $("#prog").hidden = false; $("#bar").hidden = false;
+  }
+}
+function sectionsOf(T){
+  const out = [{anchor:"sec-id", label:"Identificação"},{anchor:"sec-team", label:"1. Equipe"}];
+  T.sections.forEach((s, si) => out.push({anchor:"sec-"+si, label:(si+2)+". "+s.title}));
+  return out;
+}
+
+/* ============ início ============ */
+async function renderHome(){
+  R = null; renderTop("home");
+  const groups = [["Preventiva","Manutenção preventiva (MTM)"],["Inspeção","Inspeção"],["Corretiva","Manutenção corretiva"]];
+  const count = T => { let it=0, ph=0; T.sections.forEach(s => { if(s.type==="checklist"){ it+=s.items.length; ph+=s.photos.length; } if(s.type==="activities") it+=s.items.length; if(s.type==="photos" && !s.optional) ph+=s.groups.length; }); return [it, ph]; };
+  const card = T => { const [it, ph] = count(T); const meta = T.kind==="Corretiva" ? "Falha, ação, classe e evidências" : `${it} ${T.kind==="Inspeção"?"atividades":"itens"} · ${ph} ${ph>1?"grupos de fotos":"grupo de fotos"}`;
+    return `<button class="tpl" data-act="new" data-tid="${T.id}" type="button"><span class="tag">${esc(T.kind)}</span><b>${esc(T.name)}</b><span>${meta}</span></button>`; };
+  $("#view").innerHTML = `<div class="wrap">
+    <div class="intro"><h2>Qual relatório você vai fazer?</h2><p>Escolha o modelo, preencha em campo com fotos tiradas no próprio celular e gere o PDF pronto para anexar no Dynaway.</p></div>
+    ${installHTML()}
+    ${groups.map(([k, lbl]) => `<h3 class="grp-t">${lbl}</h3><div class="tpl-grid">${TEMPLATES.filter(t=>t.kind===k).map(card).join("")}</div>`).join("")}
+    <h3 class="grp-t">Relatórios neste aparelho</h3>
+    <div class="saved" id="saved"><div class="empty">Carregando…</div></div>
+  </div>`;
+  const list = await dbAll();
+  const el = $("#saved"); if(!el) return;
+  el.innerHTML = list.length ? list.map(r => { const T = tplById(r.templateId); if(!T) return ""; const a = audit(r);
+    return `<div class="rep"><div class="t">${esc(T.name)}<span class="pill ${r.status==="finalizado"?"done":"draft"}">${r.status==="finalizado"?"PDF gerado":"Rascunho "+Math.round(a.done/a.total*100)+"%"}</span></div>
+      <div class="m">OM ${esc(r.header.om||"—")} · ${esc(r.header.tag||"sem TAG")} · ${fmtDT(r.updatedAt)}</div>
+      <div class="acts"><button class="btn sm" data-act="open" data-id="${r.id}" type="button">Abrir</button><button class="btn sm ghost danger" data-act="del" data-id="${r.id}" aria-label="Excluir" type="button">${ICON.x}</button></div></div>`; }).join("")
+    : `<div class="empty">Nenhum relatório ainda. Os rascunhos ficam salvos automaticamente neste aparelho enquanto você preenche.</div>`;
+}
+
+/* ============ formulário ============ */
+function segHTML(path, opts, val, tones){
+  const wide = opts.some(o => o.length > 11) && opts.length > 2;
+  return `<div class="seg${wide?" wide":""}" style="--n:${opts.length}" role="radiogroup">${opts.map(o =>
+    `<button type="button" role="radio" aria-checked="${val===o}" class="${(tones||TONE)[o]||"na"}${val===o?" on":""}" data-seg="${path}" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div>`;
+}
+function itemHTML(k, n, it, extra){
+  const a = R.answers[k] || {};
+  const need = a.status==="Reparar" || a.status==="Substituir";
+  const title = extra ? `<input type="text" data-bind="xlabel.${k}" value="${esc(extra.t)}" placeholder="Descreva o item de inspeção">` : `<span class="it">${esc(it.t)}</span>`;
+  return `<div class="item" id="it-${k}">
+    <div class="item-h"><span class="sn">${n}</span>${extra?`<span class="it">${title}</span><button class="btn sm ghost danger" data-act="delx" data-k="${k}" aria-label="Remover item" type="button">${ICON.x}</button>`:title}</div>
+    ${segHTML("answers."+k+".status", ST4, a.status)}
+    <div class="row-obs${it.unit?" read":""}">
+      ${it.unit?`<div class="reading"><input type="${it.unit==="ver."?"text":"number"}" inputmode="decimal" step="any" data-bind="answers.${k}.val" value="${esc(a.val)}" placeholder="Leitura" aria-label="Leitura"><span>${esc(it.unit)}</span></div>`:""}
+      <input type="text" class="obs${need && !a.obs?" need":""}" data-bind="answers.${k}.obs" value="${esc(a.obs)}" placeholder="${need?"Descreva o problema encontrado":"Observação (opcional)"}">
+    </div></div>`;
+}
+function thumbHTML(gk, p, free){
+  return `<div class="th"><div class="im"><img src="${p.data}" alt="${esc(p.caption||"Foto")}"><button class="del" data-act="delph" data-g="${gk}" data-p="${p.id}" aria-label="Excluir foto" type="button">${ICON.x}</button></div>
+    <input type="text" data-cap="${gk}|${p.id}" value="${esc(p.caption)}" placeholder="${free?"Legenda (o que a foto mostra)":"Legenda (opcional)"}"></div>`;
+}
+function pgroupHTML(gk, title, free, optional){
+  const ps = R.photos[gk] || [];
+  return `<div class="pgroup${!ps.length && !optional?" need":""}" id="pg-${gk}" data-g="${gk}" data-free="${free?1:""}" data-opt="${optional?1:""}">
+    <div class="pg-h"><span>${esc(title)}</span><span class="cnt${ps.length||optional?"":" zero"}">${ps.length ? ps.length+(ps.length>1?" fotos":" foto") : (optional?"opcional":"sem foto")}</span></div>
+    <div class="thumbs">${ps.map(p => thumbHTML(gk, p, free)).join("")}</div>
+    <div class="pg-actions"><button class="btn pri" data-act="cam" data-g="${gk}" type="button">${ICON.cam} Tirar foto</button><button class="btn" data-act="gal" data-g="${gk}" type="button">${ICON.gal} Galeria</button></div>
+  </div>`;
+}
+function refreshGroup(gk){ const el = document.getElementById("pg-"+gk); if(el) el.outerHTML = pgroupHTML(gk, el.querySelector(".pg-h span").textContent, !!el.dataset.free, !!el.dataset.opt); }
+
+function sectionHTML(s, si, numRef){
+  const n = si+2; let body = "", cnt = "";
+  if(s.type==="checklist"){
+    const items = s.items.map(norm).map((it, ii) => itemHTML("s"+si+"i"+ii, ++numRef.n, it)).join("");
+    const extras = (R.extra["s"+si]||[]).map(x => itemHTML(x.k, ++numRef.n, {t:x.t}, x)).join("");
+    body = `<div class="items" id="items-${si}">${items}${extras}</div>
+      <button class="btn ghost" data-act="addx" data-s="${si}" type="button">${ICON.plus} Adicionar item</button>
+      ${s.photos.length?`<div class="lbl">Registro fotográfico</div>${s.photos.map((g, gi) => pgroupHTML("s"+si+"g"+gi, g, false)).join("")}`:""}`;
+    cnt = s.items.length+" itens";
+  }
+  if(s.type==="activities"){
+    body = `<p class="intro-line">${esc(s.intro)} Desmarque o que não foi feito.</p><div>${s.items.map(norm).map((it, ii) => { const k="s"+si+"i"+ii, a=R.acts[k]||{};
+      return `<div class="act"><input type="checkbox" id="ac-${k}" data-chk="acts.${k}.done" ${a.done?"checked":""}><label for="ac-${k}">${esc(it.t)}</label>${it.unit?`<div class="reading"><input type="number" inputmode="decimal" step="any" data-bind="acts.${k}.val" value="${esc(a.val)}" placeholder="Valor" aria-label="Valor"><span>${esc(it.unit)}</span></div>`:""}</div>`; }).join("")}</div>`;
+    cnt = s.items.length+" atividades";
+  }
+  if(s.type==="fields"){
+    body = s.fields.map(f => `<div class="f" id="f-${f.id}"><label class="${f.req?"req":""}" for="in-${f.id}">${esc(f.label)}</label>${
+      f.choice ? segHTML("texts."+f.id, f.choice, R.texts[f.id]) :
+      f.area ? `<textarea id="in-${f.id}" data-bind="texts.${f.id}" placeholder="${esc(f.ph||"")}">${esc(R.texts[f.id])}</textarea>` :
+      `<input type="text" id="in-${f.id}" data-bind="texts.${f.id}" value="${esc(R.texts[f.id])}" placeholder="${esc(f.ph||"")}">`}</div>`).join("");
+  }
+  if(s.type==="chips"){
+    body = `<div class="chips">${s.options.map(o => `<button type="button" class="chip${R.chips.includes(o)?" on":""}" data-chip="${esc(o)}" aria-pressed="${R.chips.includes(o)}">${esc(o)}</button>`).join("")}</div>
+      <div class="f" ${R.chips.includes("Outros")?"":"hidden"} id="outroWrap"><label for="in-outro">Outros: qual?</label><input type="text" id="in-outro" data-bind="chipOutro" value="${esc(R.chipOutro)}"></div>`;
+  }
+  if(s.type==="photos"){
+    body = s.groups.map((g, gi) => pgroupHTML("s"+si+"g"+gi, g, !!s.free, !!s.optional)).join("");
+  }
+  if(s.type==="final"){
+    const F = R.final;
+    body = `<div class="f" id="fin-omFin"><span class="lbl req">OM finalizada?</span>${segHTML("final.omFin", ["Sim","Não","N/D"], F.omFin)}<input type="text" data-bind="final.omFinObs" value="${esc(F.omFinObs)}" placeholder="Observação (opcional)"></div>
+      <div class="f" id="fin-cond"><span class="lbl req">Condição geral do radar</span>${segHTML("final.cond", ["Operante","Operante com restrição","Inoperante"], F.cond)}<input type="text" data-bind="final.condObs" value="${esc(F.condObs)}" placeholder="Observação (opcional)"></div>
+      <div class="f" id="fin-manut"><span class="lbl req">Necessária alguma manutenção adicional?</span>${segHTML("final.manut", ["Sim","Não"], F.manut, YN_INV)}<input type="text" data-bind="final.manutQual" value="${esc(F.manutQual)}" placeholder="Se sim, qual?"></div>
+      <div class="f" id="fin-pend"><span class="lbl req">Há alguma pendência?</span>${segHTML("final.pend", ["Sim","Não"], F.pend, YN_INV)}<input type="text" data-bind="final.pendQual" value="${esc(F.pendQual)}" placeholder="Se sim, qual?"></div>
+      <div class="f"><label for="in-nota">Nota adicional</label><textarea id="in-nota" data-bind="final.nota">${esc(F.nota)}</textarea></div>`;
+  }
+  return `<section class="sec" id="sec-${si}"><h3><span class="n">${n}.</span>${esc(s.title)}<span class="c">${cnt}</span></h3><div class="sec-b">${body}</div></section>`;
+}
+function teamHTML(){
+  return R.team.map((m, i) => `<div class="team-row">
+    <div class="nm"><input type="text" data-bind="team.${i}.nome" value="${esc(m.nome)}" placeholder="Nome do executante (TS ${i+1})" aria-label="Nome do executante">${R.team.length>1?`<button class="btn sm ghost danger" data-act="delm" data-i="${i}" aria-label="Remover executante" type="button">${ICON.x}</button>`:""}</div>
+    <div class="hrs"><div class="f"><label for="em-${i}">Empresa</label><input type="text" id="em-${i}" data-bind="team.${i}.empresa" value="${esc(m.empresa)}"></div>
+    <div class="f"><label for="hi-${i}">Início</label><input type="time" id="hi-${i}" data-bind="team.${i}.inicio" value="${esc(m.inicio)}"></div>
+    <div class="f"><label for="hf-${i}">Fim</label><input type="time" id="hf-${i}" data-bind="team.${i}.fim" value="${esc(m.fim)}"></div></div></div>`).join("");
+}
+function renderForm(){
+  const T = tplById(R.templateId); renderTop("form");
+  const h = R.header, numRef = {n:0};
+  $("#view").innerHTML = `<div class="wrap">
+    <section class="sec" id="sec-id"><h3>Identificação</h3><div class="sec-b">
+      <div class="f" id="f-resp"><label class="req" for="in-resp">Responsável técnico</label><input type="text" id="in-resp" data-bind="header.resp" value="${esc(h.resp)}" placeholder="Nome e sobrenome" autocomplete="name"></div>
+      <div class="grid2">
+        <div class="f" id="f-om"><label class="req" for="in-om">OM</label><input type="text" class="mono" id="in-om" data-bind="header.om" value="${esc(h.om)}" inputmode="numeric" placeholder="2026XXXXXXXXX"></div>
+        <div class="f" id="f-data"><label class="req" for="in-data">Data de execução</label><input type="date" id="in-data" data-bind="header.data" value="${esc(h.data)}"></div>
+        <div class="f" id="f-local"><label class="req" for="in-local">Localidade</label><input type="text" id="in-local" data-bind="header.local" value="${esc(h.local)}" placeholder="Nome do site"></div>
+        <div class="f" id="f-tag"><label class="req" for="in-tag">TAG do radar</label><input type="text" class="mono" id="in-tag" data-bind="header.tag" value="${esc(h.tag)}" placeholder="Ex.: SSR123" autocapitalize="characters"></div>
+      </div>
+      <div class="f" id="f-modelo"><label class="req" for="in-modelo">Modelo</label><input type="text" id="in-modelo" list="modelos" data-bind="header.modelo" value="${esc(h.modelo)}" placeholder="${esc(T.modelos.join(", "))}"><datalist id="modelos">${T.modelos.map(m=>`<option value="${esc(m)}">`).join("")}</datalist></div>
+    </div></section>
+    <section class="sec" id="sec-team"><h3><span class="n">1.</span>Equipe de atendimento à demanda</h3><div class="sec-b">
+      <div id="team" style="display:flex;flex-direction:column;gap:10px">${teamHTML()}</div>
+      <button class="btn ghost" data-act="addm" type="button">${ICON.plus} Adicionar executante</button>
+    </div></section>
+    ${T.sections.map((s, si) => sectionHTML(s, si, numRef)).join("")}
+  </div>`;
+  $("#saveState").textContent = "Salvo";
+  updateProgress();
+  window.scrollTo(0,0);
+}
+
+/* ============ eventos ============ */
+let photoTarget = null;
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-act],[data-seg],[data-chip]"); if(!b) return;
+  if(b.dataset.seg){
+    const path = b.dataset.seg, v = b.dataset.v, cur = getPath(R, path);
+    setPath(R, path, cur === v ? "" : v);
+    b.parentElement.querySelectorAll("button").forEach(x => { const on = x.dataset.v === getPath(R, path); x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
+    const m = path.match(/^answers\.(\w+)\.status$/);
+    if(m){ const it = document.getElementById("it-"+m[1]); const obs = it && it.querySelector(".obs"); const st = getPath(R, path); const need = st==="Reparar"||st==="Substituir";
+      if(obs){ obs.placeholder = need ? "Descreva o problema encontrado" : "Observação (opcional)"; obs.classList.toggle("need", need && !obs.value); if(need) obs.focus({preventScroll:true}); } }
+    touch(); return;
+  }
+  if(b.dataset.chip){
+    const o = b.dataset.chip, i = R.chips.indexOf(o);
+    if(i>=0) R.chips.splice(i,1); else R.chips.push(o);
+    b.classList.toggle("on", i<0); b.setAttribute("aria-pressed", i<0);
+    $("#outroWrap").hidden = !R.chips.includes("Outros"); touch(); return;
+  }
+  const act = b.dataset.act;
+  if(act==="new"){ R = newReport(b.dataset.tid); await dbPut(R); renderForm(); }
+  else if(act==="open"){ const r = (await dbAll()).find(x => x.id===b.dataset.id); if(r){ R = r; renderForm(); } }
+  else if(act==="del"){ if(await confirmSheet("Excluir relatório?", "O rascunho e as fotos dele serão apagados deste aparelho.", "Excluir")){ await dbDel(b.dataset.id); renderHome(); toast("Relatório excluído"); } }
+  else if(act==="home"){ clearTimeout(saveTimer); if(R) await dbPut(R); renderHome(); window.scrollTo(0,0); }
+  else if(act==="settings") openSettings();
+  else if(act==="install" && installEvt){ installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt = null; renderHome(); }
+  else if(act==="addm"){ R.team.push({nome:"", empresa:settings.empresa||"GPBR", inicio:"", fim:""}); $("#team").innerHTML = teamHTML(); touch(); }
+  else if(act==="delm"){ R.team.splice(+b.dataset.i,1); $("#team").innerHTML = teamHTML(); touch(); }
+  else if(act==="addx"){ const si = b.dataset.s, k = "x"+uid(); (R.extra["s"+si] ||= []).push({k, t:""}); renderKeepScroll(); const inp = document.querySelector(`#it-${k} input`); if(inp) inp.focus(); touch(); }
+  else if(act==="delx"){ const k = b.dataset.k; Object.keys(R.extra).forEach(s => R.extra[s] = R.extra[s].filter(x => x.k!==k)); delete R.answers[k]; renderKeepScroll(); touch(); }
+  else if(act==="cam" || act==="gal"){ photoTarget = b.dataset.g; const inp = $(act==="cam" ? "#camIn" : "#galIn"); inp.value = ""; inp.click(); }
+  else if(act==="delph"){ if(await confirmSheet("Excluir esta foto?", "Ela será removida do relatório.", "Excluir")){ const g = b.dataset.g; R.photos[g] = (R.photos[g]||[]).filter(p => p.id!==b.dataset.p); refreshGroup(g); touch(); } }
+});
+function renderKeepScroll(){ const y = window.scrollY; renderForm(); window.scrollTo(0, y); }
+document.addEventListener("input", e => {
+  const t = e.target;
+  if(t.dataset.bind && R){
+    const p = t.dataset.bind;
+    if(p.startsWith("xlabel.")){ const k = p.slice(7); Object.values(R.extra).forEach(arr => arr.forEach(x => { if(x.k===k) x.t = t.value; })); }
+    else setPath(R, p, t.value);
+    if(t.classList.contains("obs")) t.classList.toggle("need", t.classList.contains("need") && !t.value);
+    touch();
+  }
+  if(t.dataset.cap && R){ const [g, id] = t.dataset.cap.split("|"); const p = (R.photos[g]||[]).find(x => x.id===id); if(p){ p.caption = t.value; touch(); } }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if(t.dataset.chk && R){ setPath(R, t.dataset.chk, t.checked); touch(); }
+  if(t.id==="jump" && t.value){ document.getElementById(t.value)?.scrollIntoView({behavior:"smooth", block:"start"}); t.value = ""; }
+});
+["#camIn","#galIn"].forEach(sel => $(sel).addEventListener("change", async e => {
+  const files = [...e.target.files]; if(!files.length || !photoTarget || !R) return;
+  const g = photoTarget; busy(true, files.length>1 ? `Processando ${files.length} fotos…` : "Processando foto…");
+  try {
+    for(const f of files){
+      const stamp = settings.stamp ? fmtDT(f.lastModified || Date.now()) + (R.header.tag ? " · "+R.header.tag : "") : "";
+      const img = await processImage(f, 1600, stamp);
+      (R.photos[g] ||= []).push({id:uid(), caption:"", ...img});
+    }
+    refreshGroup(g); touch();
+  } catch(err){ toast("Não foi possível ler a imagem. Tente outra foto."); }
+  busy(false);
+}));
+
+/* ============ imagem: redimensiona, corrige orientação e carimba data ============ */
+function loadImg(file){ return new Promise((res, rej) => { const u = URL.createObjectURL(file); const i = new Image(); i.onload = () => { res(i); }; i.onerror = rej; i.src = u; }); }
+async function processImage(file, max, stamp, png){
+  let src; try { src = await createImageBitmap(file, {imageOrientation:"from-image"}); } catch(e){ src = await loadImg(file); }
+  const sw = src.width || src.naturalWidth, sh = src.height || src.naturalHeight;
+  const s = Math.min(1, max / Math.max(sw, sh)); const w = Math.round(sw*s), h = Math.round(sh*s);
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d");
+  if(!png){ x.fillStyle = "#fff"; x.fillRect(0,0,w,h); }
+  x.drawImage(src, 0, 0, w, h);
+  if(stamp){
+    const fs = Math.max(14, Math.round(Math.min(w,h)*0.034)), pad = Math.round(fs*0.45);
+    x.font = `600 ${fs}px Barlow, Arial, sans-serif`; const tw = x.measureText(stamp).width;
+    x.fillStyle = "rgba(0,0,0,.6)"; x.fillRect(w - tw - pad*3, h - fs - pad*3, tw + pad*2, fs + pad*2);
+    x.fillStyle = "#fff"; x.textBaseline = "top"; x.fillText(stamp, w - tw - pad*2, h - fs - pad*2.1);
+  }
+  return {data: c.toDataURL(png ? "image/png" : "image/jpeg", 0.8), w, h};
+}
+
+/* ============ folhas (modais) ============ */
+function openSheet(html){ $("#sheet").innerHTML = html; $("#modal").hidden = false; }
+function closeSheet(){ $("#modal").hidden = true; $("#sheet").innerHTML = ""; }
+$("#modal").addEventListener("click", e => { if(e.target.id==="modal") closeSheet(); });
+document.addEventListener("keydown", e => { if(e.key==="Escape" && !$("#modal").hidden) closeSheet(); });
+function confirmSheet(title, text, okLabel){
+  return new Promise(res => {
+    openSheet(`<h3>${esc(title)}</h3><p>${esc(text)}</p><div class="acts"><button class="btn" id="cNo" type="button">Cancelar</button><button class="btn pri" id="cOk" type="button">${esc(okLabel)}</button></div>`);
+    $("#cNo").onclick = () => { closeSheet(); res(false); }; $("#cOk").onclick = () => { closeSheet(); res(true); };
+  });
+}
+function openSettings(){
+  const slot = (k, lbl) => `<div class="f"><span class="lbl">${lbl}</span><div class="logo-slot"><div class="pv">${settings[k]?`<img src="${settings[k].data}" alt="">`:"sem logo"}</div>
+    <button class="btn sm" data-logo="${k}" type="button">Escolher imagem</button>${settings[k]?`<button class="btn sm ghost danger" data-unlogo="${k}" type="button">Remover</button>`:""}</div></div>`;
+  openSheet(`<h3>Ajustes</h3>
+    <div class="f"><label for="st-resp">Responsável técnico padrão</label><input type="text" id="st-resp" value="${esc(settings.resp)}" placeholder="Preenche automaticamente novos relatórios"></div>
+    <div class="f"><label for="st-emp">Empresa padrão da equipe</label><input type="text" id="st-emp" value="${esc(settings.empresa)}"></div>
+    <label class="switch"><input type="checkbox" id="st-stamp" ${settings.stamp?"checked":""}> Carimbar data, hora e TAG nas fotos</label>
+    <p style="font-size:14px">Logos impressos no cabeçalho de cada página do PDF:</p>
+    ${slot("logoL","Logo à esquerda")}${slot("logoR","Logo à direita")}
+    <div class="acts"><button class="btn pri" id="stSave" type="button">Salvar ajustes</button></div>`);
+  $("#sheet").onclick = e => {
+    const l = e.target.closest("[data-logo]"), u = e.target.closest("[data-unlogo]");
+    if(l){ logoTarget = l.dataset.logo; $("#logoIn").value = ""; $("#logoIn").click(); }
+    if(u){ settings[u.dataset.unlogo] = null; saveSettings(); openSettings(); }
+  };
+  $("#stSave").onclick = () => { settings.resp = $("#st-resp").value.trim(); settings.empresa = $("#st-emp").value.trim() || "GPBR"; settings.stamp = $("#st-stamp").checked; saveSettings(); closeSheet(); toast("Ajustes salvos"); };
+}
+let logoTarget = null;
+$("#logoIn").addEventListener("change", async e => {
+  const f = e.target.files[0]; if(!f || !logoTarget) return;
+  try { settings[logoTarget] = await processImage(f, 700, "", /png|svg|gif|webp/.test(f.type)); saveSettings(); openSettings(); }
+  catch(err){ toast("Não foi possível ler essa imagem"); }
+});
+
+/* ============ finalizar ============ */
+$("#finish").addEventListener("click", () => {
+  if(!R) return;
+  const a = audit(R);
+  if(!a.miss.length) return makePdf();
+  openSheet(`<h3>Faltam ${a.miss.length} ${a.miss.length>1?"itens":"item"}</h3>
+    <p>Toque em um item para ir até ele, ou gere o PDF assim mesmo (campos vazios saem em branco).</p>
+    <ul class="misslist">${a.miss.map(m => `<li><button type="button" data-go="${m.anchor}">${esc(m.label)}<small>ir ›</small></button></li>`).join("")}</ul>
+    <div class="acts"><button class="btn" id="mBack" type="button">Voltar e completar</button><button class="btn pri" id="mGo" type="button">Gerar PDF assim mesmo</button></div>`);
+  $("#mBack").onclick = closeSheet; $("#mGo").onclick = () => { closeSheet(); makePdf(); };
+  $("#sheet").querySelectorAll("[data-go]").forEach(x => x.onclick = () => { closeSheet(); const el = document.getElementById(x.dataset.go); if(el){ el.scrollIntoView({behavior:"smooth", block:"start"}); const i = el.querySelector("input,textarea"); if(i && i.type!=="checkbox") setTimeout(()=>i.focus({preventScroll:true}), 400); } });
+});
+
+let lastPdf = null;
+async function makePdf(){
+  if(!window.jspdf || !window.jspdf.jsPDF){ toast("O gerador de PDF não carregou. Verifique a internet e recarregue."); return; }
+  busy(true, "Gerando PDF…");
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    const {blob, pages, filename} = buildPdf(R);
+    lastPdf = {blob, filename};
+    R.status = "finalizado"; touch();
+    const mb = (blob.size/1048576).toFixed(1).replace(".", ",");
+    const canShare = !inClaude && navigator.canShare && navigator.canShare({files:[new File([blob], filename, {type:"application/pdf"})]});
+    const dl = await dlPromise;
+    openSheet(`<h3>PDF pronto</h3>
+      <div class="pdfdone">${ICON.pdf}<div><b>${esc(filename)}</b><span>${pages} ${pages>1?"páginas":"página"} · ${mb} MB</span></div></div>
+      <div class="acts">
+        ${canShare ? `<button class="btn pri" id="pShare" type="button">Compartilhar</button>` : ""}
+        ${dl || !inClaude ? `<button class="btn${canShare?"":" pri"}" id="pSave" type="button">Salvar PDF</button>` : ""}
+        ${!inClaude ? `<button class="btn" id="pOpen" type="button">Visualizar</button>` : ""}
+      </div>
+      ${inClaude && !dl ? `<p>O download não está disponível nesta visualização. Abra o app pelo navegador do celular para salvar o PDF.</p>` : ""}
+      <button class="btn ghost" id="pClose" type="button">Voltar ao relatório</button>`);
+    $("#pClose").onclick = closeSheet;
+    const s = $("#pSave"); if(s) s.onclick = () => savePdf(dl);
+    const sh = $("#pShare"); if(sh) sh.onclick = async () => { try { await navigator.share({files:[new File([blob], filename, {type:"application/pdf"})], title:filename}); } catch(e){} };
+    const o = $("#pOpen"); if(o) o.onclick = () => { const u = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener"; a.click(); };
+  } catch(err){ console.error(err); toast("Erro ao gerar o PDF: "+(err.message||err)); }
+  busy(false);
+}
+async function savePdf(dl){
+  const {blob, filename} = lastPdf;
+  if(dl){
+    try { await dl.save({filename, data:blob}); toast("PDF salvo"); }
+    catch(e){ toast(e && e.code==="declined" ? "Download cancelado" : "Não foi possível salvar o PDF aqui"); }
+    return;
+  }
+  const u = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 20000); toast("PDF salvo em Downloads");
+}
+
+/* ============ PDF ============ */
+function buildPdf(r){
+  const T = tplById(r.templateId), h = r.header;
+  const doc = new window.jspdf.jsPDF({unit:"mm", format:"a4", compress:true});
+  const W = 210, H = 297, M = 14, CW = W - 2*M, TOP = 33, BOTTOM = H - 18;
+  const INK = [21,32,43], MUT = [96,108,116], LINE = [200,208,206], SOFT = [242,244,243], ACC = [217,100,10];
+  const TONES = {ok:[29,133,73], warn:[184,125,0], bad:[191,51,40], na:[111,123,130]};
+  let y = TOP, secN = 0, itemN = 0;
+  const ensure = need => { if(y + need > BOTTOM){ doc.addPage(); y = TOP; } };
+  const base = {margin:{left:M, right:M, top:TOP, bottom:H-BOTTOM}, theme:"grid", rowPageBreak:"avoid",
+    styles:{font:"helvetica", fontSize:8.6, cellPadding:{top:1.8,bottom:1.8,left:2,right:2}, lineColor:LINE, lineWidth:0.2, textColor:INK, valign:"middle", overflow:"linebreak"},
+    headStyles:{fillColor:INK, textColor:255, fontStyle:"bold", fontSize:7.8, halign:"left"}};
+  const table = o => { doc.autoTable({...base, ...o, startY:y, styles:{...base.styles, ...(o.styles||{})}, headStyles:{...base.headStyles, ...(o.headStyles||{})}}); y = doc.lastAutoTable.finalY + 6; };
+  const LAB = {fillColor:SOFT, fontStyle:"bold", textColor:MUT, fontSize:7.6};
+  const heading = title => {
+    ensure(22); secN++;
+    doc.setFillColor(...INK); doc.rect(M, y, CW, 7.5, "F");
+    doc.setFillColor(...ACC); doc.rect(M, y, 9, 7.5, "F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(255,255,255);
+    doc.text(String(secN), M+4.5, y+5.2, {align:"center"});
+    doc.text(title.toUpperCase(), M+12, y+5.2);
+    y += 10.5;
+  };
+  const sub = title => { doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(...INK); doc.text(title, M, y+3.5); doc.setDrawColor(...ACC); doc.setLineWidth(0.5); doc.line(M, y+5.2, M+12, y+5.2); y += 8; };
+  const toneCell = (d, colStart) => { if(d.section==="body" && d.column.index>=colStart && d.cell.raw && typeof d.cell.raw === "object" && d.cell.raw.tone){ d.cell.styles.fillColor = TONES[d.cell.raw.tone]; d.cell.styles.textColor = 255; } };
+  const mark = (on, tone) => on ? {content:"X", tone} : "";
+
+  /* fotos em grade 2 colunas */
+  const photos = (title, list) => {
+    if(!list || !list.length) return;
+    const gap = 6, cw = (CW - gap)/2, ih = 64;
+    let first = true;
+    for(let i = 0; i < list.length; i += 2){
+      const row = list.slice(i, i+2);
+      const capLines = row.map(p => p.caption ? doc.setFontSize(8).splitTextToSize(p.caption, cw - 2).slice(0,3) : []);
+      const capH = Math.max(...capLines.map(l => l.length)) * 3.6 + 3;
+      ensure((first ? 8 : 0) + ih + capH + 2);
+      if(first){ if(title) sub(title); first = false; }
+      row.forEach((p, j) => {
+        const x = M + j*(cw + gap);
+        doc.setFillColor(...SOFT); doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.rect(x, y, cw, ih, "FD");
+        const s = Math.min(cw / p.w, ih / p.h), w = p.w*s, hh = p.h*s;
+        doc.addImage(p.data, "JPEG", x + (cw - w)/2, y + (ih - hh)/2, w, hh, undefined, "FAST");
+        if(capLines[j].length){ doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...INK); doc.text(capLines[j], x + 1, y + ih + 3.8); }
+      });
+      y += ih + capH + 2;
+    }
+    y += 3;
+  };
+
+  /* identificação */
+  table({ body:[
+      [{content:"Responsável técnico", styles:LAB}, {content:h.resp||"", colSpan:3, styles:{fontStyle:"bold"}}],
+      [{content:"OM", styles:LAB}, h.om||"", {content:"Data de execução", styles:LAB}, fmtDate(h.data)],
+      [{content:"Localidade", styles:LAB}, h.local||"", {content:"TAG do radar", styles:LAB}, h.tag||""],
+      [{content:"Modelo", styles:LAB}, h.modelo||"", {content:"Tipo de atividade", styles:LAB}, T.kind==="Preventiva" ? "Manutenção preventiva (MTM)" : T.kind==="Inspeção" ? "Inspeção" : "Manutenção corretiva"],
+    ], columnStyles:{0:{cellWidth:32}, 1:{cellWidth:59}, 2:{cellWidth:32}} });
+
+  heading("Equipe de atendimento à demanda");
+  table({ head:[["Executante","Empresa","Horário de início","Horário de fim"]], body:(r.team.filter(m => m.nome || m.inicio).map(m => [m.nome, m.empresa, m.inicio, m.fim]).concat([["","","",""]])).slice(0, Math.max(1, r.team.filter(m => m.nome || m.inicio).length)),
+    columnStyles:{1:{cellWidth:32}, 2:{cellWidth:32, halign:"center"}, 3:{cellWidth:32, halign:"center"}} });
+
+  T.sections.forEach((s, si) => {
+    if(s.type==="checklist"){
+      const rows = s.items.map(norm).map((it, ii) => ({k:"s"+si+"i"+ii, t:it.t, unit:it.unit}))
+        .concat((r.extra["s"+si]||[]).filter(x => x.t || r.answers[x.k]?.status).map(x => ({k:x.k, t:x.t||"Item adicional"})));
+      const hasPhotos = s.photos.some((g, gi) => (r.photos["s"+si+"g"+gi]||[]).length);
+      heading(s.title);
+      table({ head:[["Sn","Item de inspeção","Observação","Bom","Reparar","Substituir","N/D"]],
+        body: rows.map(x => { const a = r.answers[x.k] || {}; const read = x.unit && a.val ? `Leitura: ${a.val} ${x.unit}` : "";
+          return [++itemN, x.t, [read, a.obs].filter(Boolean).join("\n"), ...ST4.map(o => mark(a.status===o, TONE[o]))]; }),
+        headStyles:{halign:"center"},
+        columnStyles:{0:{cellWidth:9, halign:"center", textColor:MUT}, 1:{cellWidth:64}, 3:{cellWidth:13.5, halign:"center", fontStyle:"bold"}, 4:{cellWidth:14.5, halign:"center", fontStyle:"bold"}, 5:{cellWidth:16.5, halign:"center", fontStyle:"bold"}, 6:{cellWidth:12, halign:"center", fontStyle:"bold"}},
+        didParseCell: d => { if(d.section==="head" && d.column.index<3) d.cell.styles.halign = "left"; toneCell(d, 3); } });
+      if(hasPhotos){ s.photos.forEach((g, gi) => photos(g, r.photos["s"+si+"g"+gi])); }
+    }
+    if(s.type==="activities"){
+      heading(s.title);
+      doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(...INK); doc.text(s.intro, M, y+2); y += 5;
+      table({ head:[["#","Atividade","Leitura","Realizada"]],
+        body: s.items.map(norm).map((it, ii) => { const a = r.acts["s"+si+"i"+ii] || {}; return [ii+1, it.t, it.unit && a.val ? a.val+" "+it.unit : (it.unit ? "—" : ""), a.done ? {content:"Sim", tone:"ok"} : {content:"Não", tone:"bad"}]; }),
+        columnStyles:{0:{cellWidth:9, halign:"center", textColor:MUT}, 2:{cellWidth:24, halign:"center"}, 3:{cellWidth:20, halign:"center", fontStyle:"bold"}},
+        didParseCell: d => toneCell(d, 3) });
+    }
+    if(s.type==="fields"){
+      heading(s.title);
+      table({ body: s.fields.map(f => [{content:f.label, styles:LAB}, r.texts[f.id] || ""]), columnStyles:{0:{cellWidth:42}}, styles:{fontSize:9, valign:"top", minCellHeight:9} });
+    }
+    if(s.type==="chips"){
+      heading(s.title);
+      const cells = s.options.map(o => { const on = r.chips.includes(o); const txt = (on ? "[X]  " : "[   ]  ") + o.toUpperCase() + (o==="Outros" && on && r.chipOutro ? ": "+r.chipOutro : ""); return {content:txt, on}; });
+      const body = []; for(let i = 0; i < cells.length; i += 3) body.push(cells.slice(i, i+3).concat(Array(3).fill("")).slice(0,3));
+      table({ body, theme:"plain", styles:{fontSize:8.6, cellPadding:1.6},
+        didParseCell: d => { if(d.cell.raw && d.cell.raw.on){ d.cell.styles.fontStyle = "bold"; d.cell.styles.textColor = ACC; } } });
+    }
+    if(s.type==="photos"){
+      const groups = s.groups.map((g, gi) => [g, r.photos["s"+si+"g"+gi] || []]);
+      if(s.optional && !groups.some(([, l]) => l.length)) return;
+      heading(s.title);
+      groups.forEach(([g, l]) => { if(l.length) photos(s.free && s.groups.length===1 ? "" : g, l); else { doc.setFont("helvetica","italic"); doc.setFontSize(8.5); doc.setTextColor(...MUT); doc.text("Sem registro fotográfico.", M, y+3); y += 8; } });
+    }
+    if(s.type==="final"){
+      const F = r.final;
+      heading(s.title);
+      table({ head:[["Item de inspeção","Observação","Sim","Não","N/D"]],
+        body:[["OM finalizada", F.omFinObs||"", mark(F.omFin==="Sim","ok"), mark(F.omFin==="Não","bad"), mark(F.omFin==="N/D","na")]],
+        columnStyles:{0:{cellWidth:64}, 2:{cellWidth:14, halign:"center", fontStyle:"bold"}, 3:{cellWidth:14, halign:"center", fontStyle:"bold"}, 4:{cellWidth:14, halign:"center", fontStyle:"bold"}},
+        didParseCell: d => { if(d.section==="head" && d.column.index>=2) d.cell.styles.halign = "center"; toneCell(d, 2); } });
+      const lt = (v, tones) => v ? {content:v, tone:(tones||TONE)[v]} : "";
+      table({ head:[["Item de inspeção","Observação","Leitura"]],
+        body:[["Condição geral do radar", F.condObs||"", lt(F.cond)], ["Necessária alguma manutenção adicional?", F.manutQual||"", lt(F.manut, YN_INV)], ["Há alguma pendência?", F.pendQual||"", lt(F.pend, YN_INV)]],
+        columnStyles:{0:{cellWidth:64}, 2:{cellWidth:42, halign:"center", fontStyle:"bold"}},
+        didParseCell: d => toneCell(d, 2) });
+      table({ head:[["Nota adicional"]], body:[[F.nota || " "]], styles:{fontSize:9, valign:"top"}, bodyStyles:{minCellHeight:16} });
+    }
+  });
+
+  /* cabeçalho e rodapé em todas as páginas */
+  const n = doc.getNumberOfPages();
+  const logo = (L, align) => { if(!L) return 0; const s = Math.min(34 / L.w, 12 / L.h), w = L.w*s, hh = L.h*s; const fmt = L.data.startsWith("data:image/png") ? "PNG" : "JPEG";
+    doc.addImage(L.data, fmt, align==="L" ? M : W - M - w, 8 + (12 - hh)/2, w, hh); return w; };
+  for(let i = 1; i <= n; i++){
+    doc.setPage(i);
+    const wl = logo(settings.logoL, "L"), wr = logo(settings.logoR, "R");
+    const cx = M + wl + (CW - wl - wr)/2;
+    doc.setFont("helvetica","bold"); doc.setFontSize(wl || wr ? 10.5 : 12.5); doc.setTextColor(...INK);
+    const tl = doc.splitTextToSize(T.title, CW - wl - wr - 6);
+    doc.text(tl, cx, tl.length > 1 ? 12.5 : 14.5, {align:"center"});
+    doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...MUT);
+    doc.text(`${T.name}  ·  OM ${h.om || "—"}  ·  ${fmtDate(h.data)}`, cx, tl.length > 1 ? 21.5 : 20.5, {align:"center"});
+    doc.setDrawColor(...ACC); doc.setLineWidth(0.9); doc.line(M, 25, W - M, 25);
+    doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(M, H - 13, W - M, H - 13);
+    doc.setFontSize(7.5); doc.setTextColor(...MUT);
+    doc.text(`TAG ${h.tag || "—"}  ·  ${h.local || ""}  ·  Responsável: ${h.resp || "—"}`, M, H - 8.5);
+    doc.text(`Página ${i} de ${n}`, W - M, H - 8.5, {align:"right"});
+  }
+  const clean = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w-]+/g,"_").replace(/^_+|_+$/g,"");
+  const filename = [T.short, clean(h.tag)||"semTAG", h.om ? "OM"+clean(h.om) : "", (h.data||today()).replace(/-/g,"")].filter(Boolean).join("_") + ".pdf";
+  return {blob: doc.output("blob"), pages: n, filename};
+}
+
+/* ============ início ============ */
+renderHome();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").then(reg => {
+      reg.addEventListener("updatefound", () => {
+        const w = reg.installing;
+        w && w.addEventListener("statechange", () => {
+          if (w.state === "activated" && navigator.serviceWorker.controller) toast("App atualizado. Feche e abra de novo para usar a versÃ£o nova.");
+        });
+      });
+    }).catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

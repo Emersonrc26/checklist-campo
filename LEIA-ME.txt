@@ -1,0 +1,26 @@
+CHECKLIST DE CAMPO GPBR - versão instalável (offline)
+
+Esta pasta é o app completo. Para instalar no celular, ela precisa estar
+hospedada num endereço https:// (abrir o arquivo direto do celular não instala).
+
+OPÇÃO 1 - GitHub Pages (grátis, fica no ar permanentemente)
+ 1. Entre em github.com com a sua conta e crie um repositório (ex.: checklist-campo).
+ 2. "Add file" > "Upload files": arraste TODO o conteúdo desta pasta
+    (index.html, sw.js, manifest.webmanifest e as pastas icons e vendor). Clique em "Commit".
+ 3. Settings > Pages > Source: "Deploy from a branch", branch "main", pasta "/ (root)" > Save.
+ 4. Em 1 a 2 minutos o link aparece no topo da página (https://SEU-USUARIO.github.io/checklist-campo/).
+ Atenção: repositório público deixa o link acessível a quem souber o endereço.
+ Os relatórios e fotos NÃO vão para o GitHub: ficam só no celular de cada técnico.
+
+OPÇÃO 2 - TI da empresa
+ Entregue esta pasta para a TI publicar em qualquer servidor web com https.
+
+INSTALAR NO CELULAR (uma vez, com internet)
+ Android (Chrome): abra o link e toque em "Instalar" no aviso laranja do app,
+   ou no menu ⋮ > "Instalar app" / "Adicionar à tela inicial".
+ iPhone (Safari): botão Compartilhar > "Adicionar à Tela de Início".
+ Depois disso o app abre pelo ícone e funciona sem internet.
+
+ATUALIZAR O APP
+ Troque os arquivos no servidor e aumente o número em sw.js (const VERSION = "v2").
+ O celular baixa a versão nova na próxima vez que abrir o app com internet.
