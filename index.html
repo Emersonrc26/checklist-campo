@@ -8,14 +8,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Checklist">
+<meta name="apple-mobile-web-app-title" content="Relatórios GPBR">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
-<body><title>Checklist de Campo GPBR</title>
+<body><title>Relatórios GPBR - VALE</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 
 <link rel="stylesheet" href="fonts.css">
@@ -236,7 +236,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
 <div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <div class="splash" id="splash" role="button" tabindex="0" aria-label="Abrir os relatórios">
   <svg viewBox="0 0 96 96" aria-hidden="true"><rect x="20" y="14" width="56" height="74" rx="4" fill="#D9640A"/><rect x="26" y="22" width="44" height="60" rx="2" fill="#F2F5F4"/><rect x="36" y="9" width="24" height="11" rx="3" fill="#15202B" stroke="#D9640A" stroke-width="3"/><path d="M35 52l9 9 17-20" fill="none" stroke="#1D8549" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  <h1>Checklist<br>de Campo</h1>
+  <h1>Relatórios<br>GPBR - VALE</h1>
   <p>Inspeção · Preventiva · Corretiva</p>
   <div class="load"><i></i></div>
   <div class="dev">Desenvolvido por<b>Emerson Costa</b></div>
@@ -509,7 +509,7 @@ function updateProgress(){
 function renderTop(mode){
   const tb = $("#topbar");
   if(mode==="home"){
-    tb.innerHTML = `<h1>Checklist de campo<small>Inspeção · Preventiva · Corretiva</small></h1>
+    tb.innerHTML = `<h1>Relatórios GPBR - VALE<small>Inspeção · Preventiva · Corretiva</small></h1>
       <button class="icon-btn" data-act="settings" aria-label="Ajustes" type="button">${ICON.gear}</button>`;
     $("#prog").hidden = true; $("#bar").hidden = true;
   } else {
@@ -540,7 +540,7 @@ async function renderHome(){
     ${groups.map(([k, lbl]) => `<h3 class="grp-t">${lbl}</h3><div class="tpl-grid">${TEMPLATES.filter(t=>t.kind===k).map(card).join("")}</div>`).join("")}
     <h3 class="grp-t">Relatórios neste aparelho</h3>
     <div class="saved" id="saved"><div class="empty">Carregando…</div></div>
-    <footer class="credit">Checklist de Campo · Desenvolvido por <b>Emerson Costa</b></footer>
+    <footer class="credit">Relatórios GPBR - VALE · Desenvolvido por <b>Emerson Costa</b></footer>
   </div>`;
   const list = await dbList();
   const el = $("#saved"); if(!el) return;
@@ -679,7 +679,7 @@ document.addEventListener("click", async e => {
   if(act==="new"){ R = newReport(b.dataset.tid); await dbPut(R); renderForm(); }
   else if(act==="open"){ let r = null; try { r = await dbGet(b.dataset.id); } catch(e){} if(r){ R = r; renderForm(); } else toast("Não foi possível abrir este relatório"); }
   else if(act==="del"){ if(await confirmSheet("Excluir relatório?", "O rascunho e as fotos dele serão apagados deste aparelho.", "Excluir")){ await dbDel(b.dataset.id); renderHome(); toast("Relatório excluído"); } }
-  else if(act==="home"){ clearTimeout(saveTimer); if(R) await dbPut(R); renderHome(); window.scrollTo(0,0); }
+  else if(act==="home"){ clearTimeout(saveTimer); if(R) await dbPut(R); if(window.__reloadOnHome) return location.reload(); renderHome(); window.scrollTo(0,0); }
   else if(act==="settings") openSettings();
   else if(act==="install" && installEvt){ installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt = null; renderHome(); }
   else if(act==="addm"){ R.team.push({nome:"", empresa:settings.empresa||"GPBR", inicio:"", fim:""}); $("#team").innerHTML = teamHTML(); touch(); }
@@ -1015,15 +1015,16 @@ function buildPdf(r){
 </script>
 <script>
 if ("serviceWorker" in navigator) {
+  // Quando uma versão nova assume, recarrega na hora (na tela inicial) ou ao voltar para ela (no meio de um relatório)
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloaded) return;
+    if (!R) { reloaded = true; location.reload(); }
+    else { window.__reloadOnHome = true; toast("Versão nova do app pronta. Ela abre quando você voltar para o início."); }
+  });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").then(reg => {
-      reg.addEventListener("updatefound", () => {
-        const w = reg.installing;
-        w && w.addEventListener("statechange", () => {
-          if (w.state === "activated" && navigator.serviceWorker.controller) toast("App atualizado. Feche e abra de novo para usar a versão nova.");
-        });
-      });
-    }).catch(() => {});
+    navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).then(reg => reg.update()).catch(() => {});
   });
 }
 </script>

@@ -1,6 +1,6 @@
 {
-  "name": "Checklist de Campo GPBR",
-  "short_name": "Checklist",
+  "name": "Relatórios GPBR - VALE",
+  "short_name": "Relatórios GPBR",
   "description": "Checklists de inspeção, preventiva (MTM) e corretiva com fotos e relatório em PDF.",
   "lang": "pt-BR",
   "start_url": "./",

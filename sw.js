@@ -1,6 +1,6 @@
 // Guarda o app no aparelho para funcionar sem internet.
 // Ao publicar uma versão nova, aumente VERSION para os celulares baixarem a atualização.
-const VERSION = "v3";
+const VERSION = "v4";
 const CACHE = "checklist-campo-" + VERSION;
 const APP = [
   "./",
@@ -23,8 +23,12 @@ const APP = [
   "./icons/apple-touch-icon.png",
 ];
 
+// O GitHub Pages manda o navegador guardar os arquivos por 10 minutos. Na instalação de uma
+// versão nova, "reload" ignora essa cópia, para não misturar arquivos novos com antigos.
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(APP)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(APP.map(u => new Request(u, {cache: "reload"}))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", e => {
@@ -39,9 +43,12 @@ self.addEventListener("fetch", e => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
 
-  // Página: tenta a rede por até 3 s (pega atualizações); sem sinal, abre a cópia guardada.
+  // Página: tenta a rede por até 3 s, sem a cópia de 10 minutos do navegador; sem sinal, abre a guardada.
   if (req.mode === "navigate") {
-    const net = fetch(req).then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put("./index.html", copy)); } return r; });
+    const net = fetch(req.url, {cache: "no-store", credentials: "same-origin"}).then(r => {
+      if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put("./index.html", copy)); }
+      return r;
+    });
     const slow = new Promise(res => setTimeout(res, 3000)).then(() => caches.match("./index.html"));
     e.respondWith(Promise.race([net, slow]).then(r => r || net).catch(() => caches.match("./index.html")));
     return;
