@@ -1,12 +1,13 @@
 // Guarda o app no aparelho para funcionar sem internet.
 // Ao publicar uma versão nova, aumente VERSION para os celulares baixarem a atualização.
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE = "checklist-campo-" + VERSION;
 const APP = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./fonts.css",
+  "./logos.js",
   "./fonts/Barlow-400.woff2",
   "./fonts/Barlow-500.woff2",
   "./fonts/Barlow-600.woff2",

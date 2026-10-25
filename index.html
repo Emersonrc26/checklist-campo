@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#15202B">
-<meta name="description" content="Checklists de inspeÃ§Ã£o, preventiva (MTM) e corretiva com fotos e relatÃ³rio em PDF.">
+<meta name="description" content="Checklists de inspeção, preventiva (MTM) e corretiva com fotos e relatório em PDF.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body><title>Checklist de Campo GPBR</title>
@@ -420,10 +421,16 @@ async function wipeAll(){
 }
 
 const SKEY = "checklist-campo.settings";   // versões antigas guardavam os ajustes aqui, sem criptografia
+const DEFAULT_LOGOS = window.DEFAULT_LOGOS || null;   // definido por logos.js na versão instalada (GroundProbe à esquerda, Orica à direita)
 let settings = {resp:"", empresa:"GPBR", stamp:true, logoL:null, logoR:null};
 async function loadSettings(){
   try { const box = await kvGet("settings"); if(box) Object.assign(settings, await unseal(box)); } catch(e){}
   try { const old = localStorage.getItem(SKEY); if(old){ Object.assign(settings, JSON.parse(old)); await saveSettings(); localStorage.removeItem(SKEY); } } catch(e){}
+  // logos padrão da versão instalada: entram uma vez; se o técnico remover, continuam removidos
+  if(DEFAULT_LOGOS && !settings.logoDefaults){
+    ["logoL","logoR"].forEach(k => { if(!settings[k] && DEFAULT_LOGOS[k]) settings[k] = DEFAULT_LOGOS[k]; });
+    settings.logoDefaults = 1; await saveSettings();
+  }
 }
 async function saveSettings(){ try { await kvSet("settings", await seal(settings)); } catch(e){ toast("Não foi possível guardar os ajustes neste aparelho"); } }
 
@@ -768,7 +775,7 @@ function confirmSheet(title, text, okLabel){
 }
 function openSettings(){
   const slot = (k, lbl) => `<div class="f"><span class="lbl">${lbl}</span><div class="logo-slot"><div class="pv">${settings[k]?`<img src="${settings[k].data}" alt="">`:"sem logo"}</div>
-    <button class="btn sm" data-logo="${k}" type="button">Escolher imagem</button>${settings[k]?`<button class="btn sm ghost danger" data-unlogo="${k}" type="button">Remover</button>`:""}</div></div>`;
+    <button class="btn sm" data-logo="${k}" type="button">Escolher imagem</button>${settings[k]?`<button class="btn sm ghost danger" data-unlogo="${k}" type="button">Remover</button>`:""}${!settings[k] && DEFAULT_LOGOS && DEFAULT_LOGOS[k]?`<button class="btn sm ghost" data-deflogo="${k}" type="button">Usar padrão</button>`:""}</div></div>`;
   openSheet(`<h3>Ajustes</h3>
     <div class="f"><label for="st-resp">Responsável técnico padrão</label><input type="text" id="st-resp" value="${esc(settings.resp)}" placeholder="Preenche automaticamente novos relatórios"></div>
     <div class="f"><label for="st-emp">Empresa padrão da equipe</label><input type="text" id="st-emp" value="${esc(settings.empresa)}"></div>
@@ -786,7 +793,8 @@ function openSettings(){
     if(await confirmSheet("Excluir todos os seus dados?", "Apaga deste aparelho todos os relatórios, fotos, ajustes e logos. PDFs já salvos ou compartilhados não são afetados. Não dá para desfazer.", "Excluir tudo")){ busy(true, "Excluindo dados…"); await wipeAll(); }
   };
   $("#sheet").onclick = e => {
-    const l = e.target.closest("[data-logo]"), u = e.target.closest("[data-unlogo]");
+    const l = e.target.closest("[data-logo]"), u = e.target.closest("[data-unlogo]"), d = e.target.closest("[data-deflogo]");
+    if(d){ settings[d.dataset.deflogo] = DEFAULT_LOGOS[d.dataset.deflogo]; saveSettings(); openSettings(); }
     if(l){ logoTarget = l.dataset.logo; $("#logoIn").value = ""; $("#logoIn").click(); }
     if(u){ settings[u.dataset.unlogo] = null; saveSettings(); openSettings(); }
   };
@@ -1012,7 +1020,7 @@ if ("serviceWorker" in navigator) {
       reg.addEventListener("updatefound", () => {
         const w = reg.installing;
         w && w.addEventListener("statechange", () => {
-          if (w.state === "activated" && navigator.serviceWorker.controller) toast("App atualizado. Feche e abra de novo para usar a versÃ£o nova.");
+          if (w.state === "activated" && navigator.serviceWorker.controller) toast("App atualizado. Feche e abra de novo para usar a versão nova.");
         });
       });
     }).catch(() => {});
