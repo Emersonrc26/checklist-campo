@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v5";</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v6";</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -688,10 +688,10 @@ document.addEventListener("click", async e => {
     $("#outroWrap").hidden = !R.chips.includes("Outros"); touch(); return;
   }
   const act = b.dataset.act;
-  if(act==="new"){ R = newReport(b.dataset.tid); await dbPut(R); renderForm(); }
-  else if(act==="open"){ let r = null; try { r = await dbGet(b.dataset.id); } catch(e){} if(r){ R = r; renderForm(); } else toast("Não foi possível abrir este relatório"); }
+  if(act==="new"){ R = newReport(b.dataset.tid); await dbPut(R); renderForm(); navOpen("form"); }
+  else if(act==="open"){ let r = null; try { r = await dbGet(b.dataset.id); } catch(e){} if(r){ R = r; renderForm(); navOpen("form"); } else toast("Não foi possível abrir este relatório"); }
   else if(act==="del"){ if(await confirmSheet("Excluir relatório?", "O rascunho e as fotos dele serão apagados deste aparelho.", "Excluir")){ await dbDel(b.dataset.id); renderHome(); toast("Relatório excluído"); } }
-  else if(act==="home"){ clearTimeout(saveTimer); if(R) await dbPut(R); if(window.__reloadOnHome) return location.reload(); renderHome(); window.scrollTo(0,0); }
+  else if(act==="home") goHome();
   else if(act==="settings") openSettings();
   else if(act==="install" && installEvt){ installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt = null; renderHome(); }
   else if(act==="addm"){ R.team.push({nome:"", empresa:settings.empresa||"GPBR", inicio:"", fim:""}); $("#team").innerHTML = teamHTML(); touch(); }
@@ -752,8 +752,43 @@ async function processImage(file, max, stamp, png){
 
 /* ============ folhas (modais) ============ */
 let sheetLocked = false;   // o aviso de privacidade do primeiro uso só fecha pelo botão
-function openSheet(html){ $("#sheet").innerHTML = html; $("#sheet").onclick = null; $("#modal").hidden = false; $("#sheet").scrollTop = 0; }
-function closeSheet(){ sheetLocked = false; $("#modal").hidden = true; $("#sheet").innerHTML = ""; }
+
+/* ============ botão "voltar" do celular ============
+   Cada tela ou janela aberta (relatório, folha, painel lateral) ganha um passo no histórico do navegador.
+   Assim o voltar do Android fecha o que está aberto, ou volta ao início, em vez de fechar o app. */
+const navLayers = [];   // camadas abertas, da mais antiga para a mais recente
+let navSkip = 0, navDeferred = 0, navTimer = null;
+function navOpen(layer){
+  if(navLayers.includes(layer)) return;
+  navLayers.push(layer);
+  // uma camada que acabou de fechar pelo app ainda não devolveu o passo: reaproveita em vez de criar outro
+  if(navDeferred > 0){ navDeferred--; if(!navDeferred){ clearTimeout(navTimer); navTimer = null; } return; }
+  history.pushState({layer}, "");
+}
+function navClose(layer){   // camada fechada por um botão do app: tira o passo dela do histórico
+  const i = navLayers.lastIndexOf(layer); if(i < 0) return;
+  navLayers.splice(i, 1);
+  navDeferred++; clearTimeout(navTimer);
+  navTimer = setTimeout(() => { const n = navDeferred; navDeferred = 0; navTimer = null; if(n){ navSkip++; history.go(-n); } }, 60);
+}
+window.addEventListener("popstate", () => {
+  if(navSkip > 0){ navSkip--; return; }   // foi o próprio app voltando o histórico
+  const layer = navLayers.pop(); if(!layer) return;
+  if(layer === "sheet"){
+    if(sheetLocked){ navLayers.push("sheet"); history.pushState({layer:"sheet"}, ""); return; }
+    closeSheet(true);
+  }
+  else if(layer === "drawer" && typeof closeDrawer === "function") closeDrawer(true);
+  else if(layer === "form") goHome(true);
+});
+async function goHome(fromBack){
+  if(fromBack !== true) navClose("form");
+  clearTimeout(saveTimer); if(R) await dbPut(R);
+  if(window.__reloadOnHome) return location.reload();
+  renderHome(); window.scrollTo(0,0);
+}
+function openSheet(html){ navOpen("sheet"); $("#sheet").innerHTML = html; $("#sheet").onclick = null; $("#modal").hidden = false; $("#sheet").scrollTop = 0; }
+function closeSheet(fromBack){ if(fromBack !== true) navClose("sheet"); sheetLocked = false; $("#modal").hidden = true; $("#sheet").innerHTML = ""; }
 $("#modal").addEventListener("click", e => { if(e.target.id==="modal" && !sheetLocked) closeSheet(); });
 document.addEventListener("keydown", e => { if(e.key==="Escape" && !$("#modal").hidden && !sheetLocked) closeSheet(); });
 

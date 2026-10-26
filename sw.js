@@ -1,6 +1,6 @@
 // Guarda o app no aparelho para funcionar sem internet.
 // Gerado por build-pwa.ps1 a partir de sw-modelo.js (não edite o sw.js das pastas pwa diretamente).
-const VERSION = "v5";
+const VERSION = "v6";
 // O app oficial e o de teste ficam no mesmo endereço (emersonrc26.github.io) e dividem o armazenamento
 // de cache do navegador: cada um só mexe nos caches com o próprio prefixo.
 const PREFIX = "relatorios-gpbr-oficial-";
