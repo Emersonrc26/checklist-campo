@@ -1,7 +1,11 @@
 // Guarda o app no aparelho para funcionar sem internet.
-// Ao publicar uma versão nova, aumente VERSION para os celulares baixarem a atualização.
-const VERSION = "v4";
-const CACHE = "checklist-campo-" + VERSION;
+// Gerado por build-pwa.ps1 a partir de sw-modelo.js (não edite o sw.js das pastas pwa diretamente).
+const VERSION = "v5";
+// O app oficial e o de teste ficam no mesmo endereço (emersonrc26.github.io) e dividem o armazenamento
+// de cache do navegador: cada um só mexe nos caches com o próprio prefixo.
+const PREFIX = "relatorios-gpbr-oficial-";
+const LEGACY = ["checklist-campo-v"];   // nomes de cache de versões antigas que este app pode apagar
+const CACHE = PREFIX + VERSION;
 const APP = [
   "./",
   "./index.html",
@@ -33,7 +37,9 @@ self.addEventListener("install", e => {
 
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys
+      .filter(k => k !== CACHE && (k.startsWith(PREFIX) || LEGACY.some(p => k.startsWith(p))))
+      .map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
@@ -49,10 +55,10 @@ self.addEventListener("fetch", e => {
       if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put("./index.html", copy)); }
       return r;
     });
-    const slow = new Promise(res => setTimeout(res, 3000)).then(() => caches.match("./index.html"));
-    e.respondWith(Promise.race([net, slow]).then(r => r || net).catch(() => caches.match("./index.html")));
+    const slow = new Promise(res => setTimeout(res, 3000)).then(() => caches.match("./index.html", {cacheName: CACHE}));
+    e.respondWith(Promise.race([net, slow]).then(r => r || net).catch(() => caches.match("./index.html", {cacheName: CACHE})));
     return;
   }
-  // Demais arquivos: cache primeiro.
-  e.respondWith(caches.match(req).then(hit => hit || fetch(req)));
+  // Demais arquivos: cache primeiro (só o deste app).
+  e.respondWith(caches.open(CACHE).then(c => c.match(req)).then(hit => hit || fetch(req)));
 });

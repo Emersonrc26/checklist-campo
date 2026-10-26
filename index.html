@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#15202B">
-<meta name="description" content="Checklists de inspeção, preventiva (MTM) e corretiva com fotos e relatório em PDF.">
+<meta name="description" content="Relatórios de inspeção, preventiva (MTM) e corretiva com fotos e PDF.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v5";</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -212,6 +213,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
 .privbox span{font-size:14px;color:var(--muted)}
 .credit{margin:28px 0 8px;text-align:center;font-size:12.5px;color:var(--muted);letter-spacing:.04em}
 .credit b{color:var(--ink);font-weight:600}
+/* versão de teste: selo amarelo para não confundir com o app oficial */
+.badge-teste{display:inline-block;background:#F5BE1E;color:#15202B;font-family:var(--body);font-size:11px;font-weight:800;letter-spacing:.08em;padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:4px}
+.splash .teste-tag{color:#F5BE1E;font-weight:700;letter-spacing:.14em;font-size:13px}
 .busy{position:fixed;inset:0;z-index:60;background:rgba(8,12,14,.6);display:grid;place-items:center;color:#fff;font-weight:600}
 .busy div{display:flex;flex-direction:column;align-items:center;gap:12px}
 .spin{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;animation:sp 0.8s linear infinite}
@@ -238,6 +242,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
   <svg viewBox="0 0 96 96" aria-hidden="true"><rect x="20" y="14" width="56" height="74" rx="4" fill="#D9640A"/><rect x="26" y="22" width="44" height="60" rx="2" fill="#F2F5F4"/><rect x="36" y="9" width="24" height="11" rx="3" fill="#15202B" stroke="#D9640A" stroke-width="3"/><path d="M35 52l9 9 17-20" fill="none" stroke="#1D8549" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
   <h1>Relatórios<br>GPBR - VALE</h1>
   <p>Inspeção · Preventiva · Corretiva</p>
+  <p class="teste-tag" id="splashTeste" hidden>VERSÃO DE TESTE</p>
   <div class="load"><i></i></div>
   <div class="dev">Desenvolvido por<b>Emerson Costa</b></div>
 </div>
@@ -336,7 +341,8 @@ function busy(on, txt){ $("#busy").hidden=!on; if(txt) $("#busyTxt").textContent
 /* ============ armazenamento local criptografado ============
    Relatórios e ajustes ficam no IndexedDB cifrados com AES-GCM 256. A chave é gerada
    no próprio aparelho, não pode ser exportada e fica guardada só no IndexedDB do app. */
-const DB_NAME = "checklist-campo";
+// o app de teste usa outro banco: os dois ficam no mesmo endereço (emersonrc26.github.io) e não podem misturar dados
+const DB_NAME = (window.APP_CONFIG && window.APP_CONFIG.db) || "checklist-campo";
 const mem = new Map(), memKv = new Map();   // usados quando o navegador não oferece IndexedDB
 let idb = null;
 const idbReady = new Promise(res => {
@@ -358,6 +364,10 @@ function tx(store, mode, fn, fallback){
 }
 const kvGet = k => tx("kv", "readonly", st => st.get(k), () => memKv.get(k)).catch(() => memKv.get(k));
 const kvSet = (k, v) => { memKv.set(k, v); return tx("kv", "readwrite", st => st.put(v, k), () => {}).catch(() => {}); };
+
+const IS_TESTE = !!(window.APP_CONFIG && window.APP_CONFIG.variant === "teste");
+const TESTE_BADGE = IS_TESTE ? "<span class=\"badge-teste\">TESTE</span>" : "";
+if(IS_TESTE){ document.title = "Relatórios GPBR - TESTE"; const st = document.getElementById("splashTeste"); if(st) st.hidden = false; }
 
 const CRYPTO_OK = !!(window.isSecureContext && window.crypto && crypto.subtle);
 let KEY = null;
@@ -421,16 +431,18 @@ async function wipeAll(){
 }
 
 const SKEY = "checklist-campo.settings";   // versões antigas guardavam os ajustes aqui, sem criptografia
-const DEFAULT_LOGOS = window.DEFAULT_LOGOS || null;   // definido por logos.js na versão instalada (GroundProbe à esquerda, Orica à direita)
-let settings = {resp:"", empresa:"GPBR", stamp:true, logoL:null, logoR:null};
+const DEFAULT_LOGOS = window.DEFAULT_LOGOS || null;   // definido por logos.js na versão instalada
+// Logos do PDF: GroundProbe no cabeçalho; Orica Digital Solutions e a faixa de marcas no rodapé
+const LOGO_SLOTS = [["logoL","Cabeçalho, à esquerda"], ["logoF1","Rodapé, à esquerda"], ["logoF2","Rodapé, faixa de marcas"]];
+const LOGO_V = 2;   // aumente quando os logos padrão mudarem, para substituir os antigos nos aparelhos
+let settings = {resp:"", empresa:"GPBR", stamp:true, logoL:null, logoF1:null, logoF2:null};
+function applyDefaultLogos(){ LOGO_SLOTS.forEach(([k]) => settings[k] = DEFAULT_LOGOS[k] || null); delete settings.logoR; settings.logoDefaults = LOGO_V; }
 async function loadSettings(){
   try { const box = await kvGet("settings"); if(box) Object.assign(settings, await unseal(box)); } catch(e){}
-  try { const old = localStorage.getItem(SKEY); if(old){ Object.assign(settings, JSON.parse(old)); await saveSettings(); localStorage.removeItem(SKEY); } } catch(e){}
-  // logos padrão da versão instalada: entram uma vez; se o técnico remover, continuam removidos
-  if(DEFAULT_LOGOS && !settings.logoDefaults){
-    ["logoL","logoR"].forEach(k => { if(!settings[k] && DEFAULT_LOGOS[k]) settings[k] = DEFAULT_LOGOS[k]; });
-    settings.logoDefaults = 1; await saveSettings();
-  }
+  if(DB_NAME === "checklist-campo") try { const old = localStorage.getItem(SKEY); if(old){ Object.assign(settings, JSON.parse(old)); await saveSettings(); localStorage.removeItem(SKEY); } } catch(e){}
+  // logos padrão da versão instalada: entram uma vez por versão de logos; se o técnico remover, continuam removidos
+  if(DEFAULT_LOGOS && (settings.logoDefaults || 0) < LOGO_V){ applyDefaultLogos(); await saveSettings(); }
+  else if(settings.logoR){ if(!settings.logoF1) settings.logoF1 = settings.logoR; delete settings.logoR; await saveSettings(); }   // o antigo logo da direita passa para o rodapé
 }
 async function saveSettings(){ try { await kvSet("settings", await seal(settings)); } catch(e){ toast("Não foi possível guardar os ajustes neste aparelho"); } }
 
@@ -509,7 +521,7 @@ function updateProgress(){
 function renderTop(mode){
   const tb = $("#topbar");
   if(mode==="home"){
-    tb.innerHTML = `<h1>Relatórios GPBR - VALE<small>Inspeção · Preventiva · Corretiva</small></h1>
+    tb.innerHTML = `<h1>Relatórios GPBR - VALE${TESTE_BADGE}<small>Inspeção · Preventiva · Corretiva</small></h1>
       <button class="icon-btn" data-act="settings" aria-label="Ajustes" type="button">${ICON.gear}</button>`;
     $("#prog").hidden = true; $("#bar").hidden = true;
   } else {
@@ -540,7 +552,7 @@ async function renderHome(){
     ${groups.map(([k, lbl]) => `<h3 class="grp-t">${lbl}</h3><div class="tpl-grid">${TEMPLATES.filter(t=>t.kind===k).map(card).join("")}</div>`).join("")}
     <h3 class="grp-t">Relatórios neste aparelho</h3>
     <div class="saved" id="saved"><div class="empty">Carregando…</div></div>
-    <footer class="credit">Relatórios GPBR - VALE · Desenvolvido por <b>Emerson Costa</b></footer>
+    <footer class="credit">Relatórios GPBR - VALE · Desenvolvido por <b>Emerson Costa</b>${window.APP_VERSION ? " · " + window.APP_VERSION + (IS_TESTE ? " (teste)" : "") : ""}</footer>
   </div>`;
   const list = await dbList();
   const el = $("#saved"); if(!el) return;
@@ -775,13 +787,14 @@ function confirmSheet(title, text, okLabel){
 }
 function openSettings(){
   const slot = (k, lbl) => `<div class="f"><span class="lbl">${lbl}</span><div class="logo-slot"><div class="pv">${settings[k]?`<img src="${settings[k].data}" alt="">`:"sem logo"}</div>
-    <button class="btn sm" data-logo="${k}" type="button">Escolher imagem</button>${settings[k]?`<button class="btn sm ghost danger" data-unlogo="${k}" type="button">Remover</button>`:""}${!settings[k] && DEFAULT_LOGOS && DEFAULT_LOGOS[k]?`<button class="btn sm ghost" data-deflogo="${k}" type="button">Usar padrão</button>`:""}</div></div>`;
+    <button class="btn sm" data-logo="${k}" type="button">Escolher imagem</button>${settings[k]?`<button class="btn sm ghost danger" data-unlogo="${k}" type="button">Remover</button>`:""}</div></div>`;
   openSheet(`<h3>Ajustes</h3>
     <div class="f"><label for="st-resp">Responsável técnico padrão</label><input type="text" id="st-resp" value="${esc(settings.resp)}" placeholder="Preenche automaticamente novos relatórios"></div>
     <div class="f"><label for="st-emp">Empresa padrão da equipe</label><input type="text" id="st-emp" value="${esc(settings.empresa)}"></div>
     <label class="switch"><input type="checkbox" id="st-stamp" ${settings.stamp?"checked":""}> Carimbar data, hora e TAG nas fotos</label>
-    <p style="font-size:14px">Logos impressos no cabeçalho de cada página do PDF:</p>
-    ${slot("logoL","Logo à esquerda")}${slot("logoR","Logo à direita")}
+    <p style="font-size:14px">Logos impressos em todas as páginas do PDF:</p>
+    ${LOGO_SLOTS.map(([k, lbl]) => slot(k, lbl)).join("")}
+    ${DEFAULT_LOGOS ? `<button class="btn" id="stRestore" type="button">Restaurar logos padrão</button>` : ""}
     <div class="acts"><button class="btn pri" id="stSave" type="button">Salvar ajustes</button></div>
     <div class="privbox">
       <b>Privacidade e dados</b>
@@ -793,8 +806,8 @@ function openSettings(){
     if(await confirmSheet("Excluir todos os seus dados?", "Apaga deste aparelho todos os relatórios, fotos, ajustes e logos. PDFs já salvos ou compartilhados não são afetados. Não dá para desfazer.", "Excluir tudo")){ busy(true, "Excluindo dados…"); await wipeAll(); }
   };
   $("#sheet").onclick = e => {
-    const l = e.target.closest("[data-logo]"), u = e.target.closest("[data-unlogo]"), d = e.target.closest("[data-deflogo]");
-    if(d){ settings[d.dataset.deflogo] = DEFAULT_LOGOS[d.dataset.deflogo]; saveSettings(); openSettings(); }
+    const l = e.target.closest("[data-logo]"), u = e.target.closest("[data-unlogo]");
+    if(e.target.closest("#stRestore")){ applyDefaultLogos(); saveSettings(); openSettings(); toast("Logos padrão restaurados"); }
     if(l){ logoTarget = l.dataset.logo; $("#logoIn").value = ""; $("#logoIn").click(); }
     if(u){ settings[u.dataset.unlogo] = null; saveSettings(); openSettings(); }
   };
@@ -863,7 +876,7 @@ async function savePdf(dl){
 function buildPdf(r){
   const T = tplById(r.templateId), h = r.header;
   const doc = new window.jspdf.jsPDF({unit:"mm", format:"a4", compress:true});
-  const W = 210, H = 297, M = 14, CW = W - 2*M, TOP = 33, BOTTOM = H - 18;
+  const W = 210, H = 297, M = 14, CW = W - 2*M, TOP = 33, BOTTOM = H - 26;
   const INK = [21,32,43], MUT = [96,108,116], LINE = [200,208,206], SOFT = [242,244,243], ACC = [217,100,10];
   const TONES = {ok:[29,133,73], warn:[184,125,0], bad:[191,51,40], na:[111,123,130]};
   let y = TOP, secN = 0, itemN = 0;
@@ -978,11 +991,15 @@ function buildPdf(r){
 
   /* cabeçalho e rodapé em todas as páginas */
   const n = doc.getNumberOfPages();
-  const logo = (L, align) => { if(!L) return 0; const s = Math.min(34 / L.w, 12 / L.h), w = L.w*s, hh = L.h*s; const fmt = L.data.startsWith("data:image/png") ? "PNG" : "JPEG";
-    doc.addImage(L.data, fmt, align==="L" ? M : W - M - w, 8 + (12 - hh)/2, w, hh); return w; };
+  // desenha um logo dentro da caixa (x, y, largura máx., altura), centralizado na vertical; devolve a largura usada
+  const logo = (L, x, y, maxW, boxH) => { if(!L || maxW <= 0) return 0; const s = Math.min(maxW / L.w, boxH / L.h), w = L.w*s, hh = L.h*s;
+    doc.addImage(L.data, L.data.startsWith("data:image/png") ? "PNG" : "JPEG", x, y + (boxH - hh)/2, w, hh); return w; };
   for(let i = 1; i <= n; i++){
     doc.setPage(i);
-    const wl = logo(settings.logoL, "L"), wr = logo(settings.logoR, "R");
+    const wl = logo(settings.logoL, M, 8, 42, 11), wr = 0;
+    // rodapé: Orica Digital Solutions e, ao lado, a faixa de marcas
+    const f1 = logo(settings.logoF1, M, H - 14.5, 32, 9.5);
+    logo(settings.logoF2, M + f1 + (f1 ? 6 : 0), H - 14.5, CW - f1 - (f1 ? 6 : 0), 4.6);
     const cx = M + wl + (CW - wl - wr)/2;
     doc.setFont("helvetica","bold"); doc.setFontSize(wl || wr ? 10.5 : 12.5); doc.setTextColor(...INK);
     const tl = doc.splitTextToSize(T.title, CW - wl - wr - 6);
@@ -990,10 +1007,10 @@ function buildPdf(r){
     doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...MUT);
     doc.text(`${T.name}  ·  OM ${h.om || "—"}  ·  ${fmtDate(h.data)}`, cx, tl.length > 1 ? 21.5 : 20.5, {align:"center"});
     doc.setDrawColor(...ACC); doc.setLineWidth(0.9); doc.line(M, 25, W - M, 25);
-    doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(M, H - 13, W - M, H - 13);
+    doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(M, H - 22, W - M, H - 22);
     doc.setFontSize(7.5); doc.setTextColor(...MUT);
-    doc.text(`TAG ${h.tag || "—"}  ·  ${h.local || ""}  ·  Responsável: ${h.resp || "—"}`, M, H - 8.5);
-    doc.text(`Página ${i} de ${n}`, W - M, H - 8.5, {align:"right"});
+    doc.text(`TAG ${h.tag || "—"}  ·  ${h.local || ""}  ·  Responsável: ${h.resp || "—"}`, M, H - 17.5);
+    doc.text(`Página ${i} de ${n}`, W - M, H - 17.5, {align:"right"});
   }
   const clean = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w-]+/g,"_").replace(/^_+|_+$/g,"");
   const filename = [T.short, clean(h.tag)||"semTAG", h.om ? "OM"+clean(h.om) : "", (h.data||today()).replace(/-/g,"")].filter(Boolean).join("_") + ".pdf";
