@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v7"; window.APP_NEWS = [{"t":"Aviso de novidades","d":"A cada atualização, o app mostra aqui um resumo rápido do que mudou."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v8"; window.APP_NEWS = [{"t":"Aviso de novidades","d":"Agora fica na tela até você tocar em Entendi."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -764,7 +764,7 @@ async function processImage(file, max, stamp, png){
 }
 
 /* ============ folhas (modais) ============ */
-let sheetLocked = false;   // o aviso de privacidade do primeiro uso só fecha pelo botão
+let sheetLocked = false;   // o aviso de privacidade do primeiro uso e o de novidades só fecham pelo botão
 
 /* ============ botão "voltar" do celular ============
    Cada tela ou janela aberta (relatório, folha, painel lateral) ganha um passo no histórico do navegador.
@@ -845,8 +845,9 @@ function openNews(firstTime){
     <h3>${firstTime ? "O app foi atualizado" : "Novidades desta versão"}</h3>
     <ul class="news">${NEWS.map(n => `<li><span class="ic" aria-hidden="true">${check}</span><span><b>${esc(n.t)}</b>${n.d ? `<span>${esc(n.d)}</span>` : ""}</span></li>`).join("")}</ul>
     <div class="acts"><button class="btn pri" id="nwOk" type="button">Entendi</button></div>`);
-  $("#nwOk").onclick = closeSheet;
-  kvSet("newsSeen", window.APP_VERSION);
+  // na abertura após a atualização, só fecha pelo "Entendi"; só então conta como visto
+  sheetLocked = !!firstTime;
+  $("#nwOk").onclick = async () => { await kvSet("newsSeen", window.APP_VERSION); closeSheet(); };
 }
 function confirmSheet(title, text, okLabel){
   return new Promise(res => {
@@ -1101,14 +1102,17 @@ function buildPdf(r){
 </script>
 <script>
 if ("serviceWorker" in navigator) {
-  // Quando uma versão nova assume, recarrega na hora (na tela inicial) ou ao voltar para ela (no meio de um relatório)
+  // Quando uma versão nova assume, recarrega na hora (na tela inicial) ou ao voltar para ela (no meio de um relatório).
+  // Com uma janela aberta (aviso de novidades, privacidade, ajustes), espera ela ser fechada para não sumir com ela.
   const hadController = !!navigator.serviceWorker.controller;
   let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadController || reloaded) return;
-    if (!R) { reloaded = true; location.reload(); }
-    else { window.__reloadOnHome = true; toast("Versão nova do app pronta. Ela abre quando você voltar para o início."); }
-  });
+  const applyUpdate = () => {
+    if (reloaded) return;
+    if (R) { window.__reloadOnHome = true; toast("Versão nova do app pronta. Ela abre quando você voltar para o início."); return; }
+    if (!document.getElementById("modal").hidden) { setTimeout(applyUpdate, 400); return; }
+    reloaded = true; location.reload();
+  };
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController) applyUpdate(); });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).then(reg => reg.update()).catch(() => {});
   });
