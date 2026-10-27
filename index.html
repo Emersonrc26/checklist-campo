@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v9"; window.APP_NEWS = [{"t":"Excluir vários relatórios","d":"Em Relatórios neste aparelho, toque em Selecionar, marque os que quiser e exclua de uma vez."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v10"; window.APP_NEWS = [{"t":"Fotos na galeria","d":"A foto tirada pelo botão Tirar foto agora também fica salva no celular (álbum Download da galeria), em tamanho reduzido."},{"t":"Pode desligar","d":"Em Ajustes, desmarque Salvar na galeria as fotos tiradas pelo app."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -462,7 +462,7 @@ const DEFAULT_LOGOS = window.DEFAULT_LOGOS || null;   // definido por logos.js n
 // Logos do PDF: GroundProbe no cabeçalho; Orica Digital Solutions e a faixa de marcas no rodapé
 const LOGO_SLOTS = [["logoL","Cabeçalho, à esquerda"], ["logoF1","Rodapé, à esquerda"], ["logoF2","Rodapé, faixa de marcas"]];
 const LOGO_V = 2;   // aumente quando os logos padrão mudarem, para substituir os antigos nos aparelhos
-let settings = {resp:"", empresa:"GPBR", stamp:true, logoL:null, logoF1:null, logoF2:null};
+let settings = {resp:"", empresa:"GPBR", stamp:true, gallery:true, logoL:null, logoF1:null, logoF2:null};
 function applyDefaultLogos(){ LOGO_SLOTS.forEach(([k]) => settings[k] = DEFAULT_LOGOS[k] || null); delete settings.logoR; settings.logoDefaults = LOGO_V; }
 async function loadSettings(){
   try { const box = await kvGet("settings"); if(box) Object.assign(settings, await unseal(box)); } catch(e){}
@@ -782,8 +782,10 @@ document.addEventListener("change", e => {
 ["#camIn","#galIn"].forEach(sel => $(sel).addEventListener("change", async e => {
   const files = [...e.target.files]; if(!files.length || !photoTarget || !R) return;
   const g = photoTarget; busy(true, files.length>1 ? `Processando ${files.length} fotos…` : "Processando foto…");
+  const gal = sel==="#camIn" && settings.gallery && !inClaude;
   try {
     for(const f of files){
+      if(gal) await saveToGallery(f);
       const stamp = settings.stamp ? fmtDT(f.lastModified || Date.now()) + (R.header.tag ? " · "+R.header.tag : "") : "";
       const img = await processImage(f, 1600, stamp);
       (R.photos[g] ||= []).push({id:uid(), caption:"", ...img});
@@ -792,6 +794,19 @@ document.addEventListener("change", e => {
   } catch(err){ toast("Não foi possível ler a imagem. Tente outra foto."); }
   busy(false);
 }));
+
+/* foto tirada pela câmera do app: a câmera do navegador não grava no celular, então uma cópia vai para Downloads,
+   pasta que a galeria do Android mostra (álbum "Download"). A cópia é reduzida (lado maior 2560 px) para não
+   ocupar ~10 MB por foto; se a redução falhar, vai o original */
+async function saveToGallery(f){
+  const d = new Date(f.lastModified || Date.now()), p = n => String(n).padStart(2, "0");
+  const tag = (R.header.tag || "").replace(/[^\w-]+/g, "_").slice(0, 30);
+  const name = `GPBR_${tag ? tag+"_" : ""}${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`;
+  let blob = f;
+  try { const img = await processImage(f, 2560, ""); const small = await (await fetch(img.data)).blob(); if(small.size < f.size) blob = small; } catch(e){}
+  const u = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 20000);
+}
 
 /* ============ imagem: redimensiona, corrige orientação e carimba data ============ */
 function loadImg(file){ return new Promise((res, rej) => { const u = URL.createObjectURL(file); const i = new Image(); i.onload = () => { res(i); }; i.onerror = rej; i.src = u; }); }
@@ -911,6 +926,7 @@ function openSettings(){
     <div class="f"><label for="st-resp">Responsável técnico padrão</label><input type="text" id="st-resp" value="${esc(settings.resp)}" placeholder="Preenche automaticamente novos relatórios"></div>
     <div class="f"><label for="st-emp">Empresa padrão da equipe</label><input type="text" id="st-emp" value="${esc(settings.empresa)}"></div>
     <label class="switch"><input type="checkbox" id="st-stamp" ${settings.stamp?"checked":""}> Carimbar data, hora e TAG nas fotos</label>
+    <label class="switch"><input type="checkbox" id="st-gal" ${settings.gallery?"checked":""}> Salvar na galeria as fotos tiradas pelo app</label>
     <p style="font-size:14px">Logos impressos em todas as páginas do PDF:</p>
     ${LOGO_SLOTS.map(([k, lbl]) => slot(k, lbl)).join("")}
     ${DEFAULT_LOGOS ? `<button class="btn" id="stRestore" type="button">Restaurar logos padrão</button>` : ""}
@@ -930,7 +946,7 @@ function openSettings(){
     if(l){ logoTarget = l.dataset.logo; $("#logoIn").value = ""; $("#logoIn").click(); }
     if(u){ settings[u.dataset.unlogo] = null; saveSettings(); openSettings(); }
   };
-  $("#stSave").onclick = () => { settings.resp = $("#st-resp").value.trim(); settings.empresa = $("#st-emp").value.trim() || "GPBR"; settings.stamp = $("#st-stamp").checked; saveSettings(); closeSheet(); toast("Ajustes salvos"); };
+  $("#stSave").onclick = () => { settings.resp = $("#st-resp").value.trim(); settings.empresa = $("#st-emp").value.trim() || "GPBR"; settings.stamp = $("#st-stamp").checked; settings.gallery = $("#st-gal").checked; saveSettings(); closeSheet(); toast("Ajustes salvos"); };
 }
 let logoTarget = null;
 $("#logoIn").addEventListener("change", async e => {
