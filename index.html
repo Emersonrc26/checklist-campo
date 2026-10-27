@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v8"; window.APP_NEWS = [{"t":"Aviso de novidades","d":"Agora fica na tela até você tocar em Entendi."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v9"; window.APP_NEWS = [{"t":"Excluir vários relatórios","d":"Em Relatórios neste aparelho, toque em Selecionar, marque os que quiser e exclua de uma vez."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -78,6 +78,20 @@ main{padding-bottom:120px}
 .rep .t{font-weight:600;min-width:0}
 .rep .m{grid-column:1;color:var(--muted);font-size:13px;font-family:var(--mono)}
 .rep .acts{grid-row:1/span 2;grid-column:2;display:flex;gap:6px}
+.saved-h{display:flex;align-items:center;gap:10px}
+.saved-h .grp-t{flex:1}
+.saved-h #selTop:empty{display:none}
+.saved-h #selTop .btn{margin-top:16px}
+.rep.pick{grid-template-columns:auto 1fr;text-align:left;width:100%;color:inherit;font:inherit;cursor:pointer}
+.rep.pick .box{grid-row:1/span 2;width:26px;height:26px;border-radius:7px;border:2px solid var(--muted);display:grid;place-items:center}
+.rep.pick .box svg{width:18px;height:18px}
+.rep.pick .m{grid-column:2}
+.rep.pick.on{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 9%,var(--surface))}
+.rep.pick.on .box{background:var(--bad);border-color:var(--bad);color:#fff}
+.sel-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:6px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(0,0,0,.18)}
+.sel-bar .cnt{flex:1;min-width:0;font-weight:600;font-size:14px}
+.btn.danger-solid{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn:disabled{opacity:.45}
 .pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:2px}
 .pill.draft{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
 .pill.done{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
@@ -344,6 +358,7 @@ const ICON = {
   gal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
 };
 let toastT;
@@ -562,20 +577,48 @@ async function renderHome(){
     <div class="intro"><h2>Qual relatório você vai fazer?</h2><p>Escolha o modelo, preencha em campo com fotos tiradas no próprio celular e gere o PDF pronto para anexar no Dynaway.</p></div>
     ${installHTML()}
     ${groups.map(([k, lbl]) => `<h3 class="grp-t">${lbl}</h3><div class="tpl-grid">${TEMPLATES.filter(t=>t.kind===k).map(card).join("")}</div>`).join("")}
-    <h3 class="grp-t">Relatórios neste aparelho</h3>
+    <div class="saved-h"><h3 class="grp-t">Relatórios neste aparelho</h3><span id="selTop"></span></div>
     <div class="saved" id="saved"><div class="empty">Carregando…</div></div>
+    <div id="selBar"></div>
     <footer class="credit">Relatórios GPBR - VALE · Desenvolvido por <b>Emerson Costa</b>${window.APP_VERSION ? ` · <button class="ver-link" data-act="news" type="button" aria-label="Ver novidades desta versão">${window.APP_VERSION}${IS_TESTE ? " (teste)" : ""}</button>` : ""}</footer>
   </div>`;
-  const list = await dbList();
+  if(selMode) exitSelect(false, true);
+  savedList = (await dbList()).filter(m => m.broken || tplById(m.templateId));
+  renderSaved();
+}
+
+/* ============ relatórios salvos: abrir, excluir um ou selecionar vários ============ */
+let savedList = [], selMode = false;
+const selIds = new Set();
+function renderSaved(){
   const el = $("#saved"); if(!el) return;
+  const list = savedList;
   const del = id => `<button class="btn sm ghost danger" data-act="del" data-id="${id}" aria-label="Excluir" type="button">${ICON.x}</button>`;
-  el.innerHTML = list.length ? list.map(m => {
-    if(m.broken) return `<div class="rep"><div class="t">Relatório que não pôde ser aberto</div><div class="m">${m.updatedAt ? fmtDT(m.updatedAt) : ""}</div><div class="acts">${del(m.id)}</div></div>`;
-    const T = tplById(m.templateId); if(!T) return "";
-    return `<div class="rep"><div class="t">${esc(T.name)}<span class="pill ${m.status==="finalizado"?"done":"draft"}">${m.status==="finalizado"?"PDF gerado":"Rascunho "+m.pct+"%"}</span></div>
-      <div class="m">OM ${esc(m.om||"—")} · ${esc(m.tag||"sem TAG")} · ${fmtDT(m.updatedAt)}</div>
-      <div class="acts"><button class="btn sm" data-act="open" data-id="${m.id}" type="button">Abrir</button>${del(m.id)}</div></div>`; }).join("")
+  const info = m => { if(m.broken) return [`Relatório que não pôde ser aberto`, m.updatedAt ? fmtDT(m.updatedAt) : ""];
+    const T = tplById(m.templateId);
+    return [`${esc(T.name)}<span class="pill ${m.status==="finalizado"?"done":"draft"}">${m.status==="finalizado"?"PDF gerado":"Rascunho "+m.pct+"%"}</span>`,
+      `OM ${esc(m.om||"—")} · ${esc(m.tag||"sem TAG")} · ${fmtDT(m.updatedAt)}`]; };
+  el.innerHTML = list.length ? list.map(m => { const [t, meta] = info(m);
+    if(selMode){ const on = selIds.has(m.id);
+      return `<button class="rep pick${on?" on":""}" data-act="pick" data-id="${m.id}" role="checkbox" aria-checked="${on}" type="button"><span class="box" aria-hidden="true">${on?ICON.check:""}</span><span class="t">${t}</span><span class="m">${meta}</span></button>`; }
+    return `<div class="rep"><div class="t">${t}</div><div class="m">${meta}</div><div class="acts">${m.broken ? "" : `<button class="btn sm" data-act="open" data-id="${m.id}" type="button">Abrir</button>`}${del(m.id)}</div></div>`; }).join("")
     : `<div class="empty">Nenhum relatório ainda. Os rascunhos ficam salvos automaticamente neste aparelho enquanto você preenche.</div>`;
+  $("#selTop").innerHTML = list.length > 1 && !selMode ? `<button class="btn sm ghost" data-act="selmode" type="button">${ICON.check} Selecionar</button>` : "";
+  const n = selIds.size, all = n === list.length;
+  $("#selBar").innerHTML = selMode ? `<div class="sel-bar" role="toolbar" aria-label="Relatórios selecionados">
+      <span class="cnt">${n ? n + (n > 1 ? " selecionados" : " selecionado") : "Toque para marcar"}</span>
+      <button class="btn sm ghost" data-act="selall" type="button">${all ? "Nenhum" : "Todos"}</button>
+      <button class="btn sm ghost" data-act="selcancel" type="button">Cancelar</button>
+      <button class="btn sm danger-solid" data-act="seldel" type="button" ${n ? "" : "disabled"}>${ICON.x} Excluir${n ? " ("+n+")" : ""}</button></div>` : "";
+}
+function enterSelect(){ selMode = true; selIds.clear(); navOpen("select"); renderSaved(); }
+function exitSelect(fromBack, quiet){ if(!selMode) return; if(fromBack !== true) navClose("select"); selMode = false; selIds.clear(); if(!quiet) renderSaved(); }
+async function deleteSelected(){
+  const ids = [...selIds], n = ids.length; if(!n) return;
+  if(!await confirmSheet(n > 1 ? `Excluir ${n} relatórios?` : "Excluir 1 relatório?", "Os rascunhos e as fotos deles serão apagados deste aparelho. Não dá para desfazer.", "Excluir")) return;
+  busy(true, "Excluindo…");
+  try { for(const id of ids) await dbDel(id); } finally { busy(false); }
+  exitSelect(false, true); await renderHome(); toast(n > 1 ? `${n} relatórios excluídos` : "Relatório excluído");
 }
 
 /* ============ formulário ============ */
@@ -703,6 +746,11 @@ document.addEventListener("click", async e => {
   if(act==="new"){ R = newReport(b.dataset.tid); await dbPut(R); renderForm(); navOpen("form"); }
   else if(act==="open"){ let r = null; try { r = await dbGet(b.dataset.id); } catch(e){} if(r){ R = r; renderForm(); navOpen("form"); } else toast("Não foi possível abrir este relatório"); }
   else if(act==="del"){ if(await confirmSheet("Excluir relatório?", "O rascunho e as fotos dele serão apagados deste aparelho.", "Excluir")){ await dbDel(b.dataset.id); renderHome(); toast("Relatório excluído"); } }
+  else if(act==="selmode") enterSelect();
+  else if(act==="pick"){ const id = b.dataset.id; if(selIds.has(id)) selIds.delete(id); else selIds.add(id); renderSaved(); }
+  else if(act==="selall"){ if(selIds.size === savedList.length) selIds.clear(); else savedList.forEach(m => selIds.add(m.id)); renderSaved(); }
+  else if(act==="selcancel") exitSelect();
+  else if(act==="seldel") deleteSelected();
   else if(act==="home") goHome();
   else if(act==="settings") openSettings();
   else if(act==="news") openNews(false);
@@ -792,6 +840,7 @@ window.addEventListener("popstate", () => {
     closeSheet(true);
   }
   else if(layer === "drawer" && typeof closeDrawer === "function") closeDrawer(true);
+  else if(layer === "select") exitSelect(true);
   else if(layer === "form") goHome(true);
 });
 async function goHome(fromBack){
