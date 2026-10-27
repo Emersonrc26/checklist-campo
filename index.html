@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v6";</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v7"; window.APP_NEWS = [{"t":"Aviso de novidades","d":"A cada atualização, o app mostra aqui um resumo rápido do que mudou."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -213,6 +213,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
 .privbox span{font-size:14px;color:var(--muted)}
 .credit{margin:28px 0 8px;text-align:center;font-size:12.5px;color:var(--muted);letter-spacing:.04em}
 .credit b{color:var(--ink);font-weight:600}
+.ver-link{background:none;border:0;padding:0;font:inherit;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+/* aviso de novidades da versão */
+.news-h{display:flex;align-items:center;gap:8px}
+.news-tag{background:var(--accent);color:var(--accent-ink);font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.news-ver{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.news{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.news li{display:flex;gap:12px;align-items:flex-start}
+.news .ic{width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok);display:grid;place-items:center;flex:none;margin-top:1px}
+.news .ic svg{width:15px;height:15px}
+.news li>span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.news b{font-size:15.5px}
+.news li span span{font-size:14px;color:var(--muted)}
 /* versão de teste: selo amarelo para não confundir com o app oficial */
 .badge-teste{display:inline-block;background:#F5BE1E;color:#15202B;font-family:var(--body);font-size:11px;font-weight:800;letter-spacing:.08em;padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:4px}
 .splash .teste-tag{color:#F5BE1E;font-weight:700;letter-spacing:.14em;font-size:13px}
@@ -552,7 +564,7 @@ async function renderHome(){
     ${groups.map(([k, lbl]) => `<h3 class="grp-t">${lbl}</h3><div class="tpl-grid">${TEMPLATES.filter(t=>t.kind===k).map(card).join("")}</div>`).join("")}
     <h3 class="grp-t">Relatórios neste aparelho</h3>
     <div class="saved" id="saved"><div class="empty">Carregando…</div></div>
-    <footer class="credit">Relatórios GPBR - VALE · Desenvolvido por <b>Emerson Costa</b>${window.APP_VERSION ? " · " + window.APP_VERSION + (IS_TESTE ? " (teste)" : "") : ""}</footer>
+    <footer class="credit">Relatórios GPBR - VALE · Desenvolvido por <b>Emerson Costa</b>${window.APP_VERSION ? ` · <button class="ver-link" data-act="news" type="button" aria-label="Ver novidades desta versão">${window.APP_VERSION}${IS_TESTE ? " (teste)" : ""}</button>` : ""}</footer>
   </div>`;
   const list = await dbList();
   const el = $("#saved"); if(!el) return;
@@ -693,6 +705,7 @@ document.addEventListener("click", async e => {
   else if(act==="del"){ if(await confirmSheet("Excluir relatório?", "O rascunho e as fotos dele serão apagados deste aparelho.", "Excluir")){ await dbDel(b.dataset.id); renderHome(); toast("Relatório excluído"); } }
   else if(act==="home") goHome();
   else if(act==="settings") openSettings();
+  else if(act==="news") openNews(false);
   else if(act==="install" && installEvt){ installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt = null; renderHome(); }
   else if(act==="addm"){ R.team.push({nome:"", empresa:settings.empresa||"GPBR", inicio:"", fim:""}); $("#team").innerHTML = teamHTML(); touch(); }
   else if(act==="delm"){ R.team.splice(+b.dataset.i,1); $("#team").innerHTML = teamHTML(); touch(); }
@@ -811,9 +824,30 @@ async function openPrivacy(required){
     <p class="priv-meta">Aviso versão ${PRIVACY_V}${ok && ok.at ? " · aceito em " + fmtDT(ok.at) : ""} · Desenvolvido por Emerson Costa</p>
     <div class="acts"><button class="btn pri" id="pvOk" type="button">${required ? "Li e concordo" : "Fechar"}</button></div>`);
   sheetLocked = !!required;
-  $("#pvOk").onclick = async () => { if(required) await kvSet("privacy", {v:PRIVACY_V, at:Date.now()}); closeSheet(); };
+  $("#pvOk").onclick = async () => { if(required){ await kvSet("privacy", {v:PRIVACY_V, at:Date.now()}); if(window.APP_VERSION) await kvSet("newsSeen", window.APP_VERSION); } closeSheet(); };
 }
-async function checkPrivacy(){ const p = await kvGet("privacy"); if(!p || p.v < PRIVACY_V) openPrivacy(true); }
+async function checkPrivacy(){ const p = await kvGet("privacy"); if(!p || p.v < PRIVACY_V) openPrivacy(true); else checkNews(); }
+
+/* ============ novidades da versão ============
+   Depois de cada atualização, mostra uma vez um resumo curto do que mudou (lista em window.APP_NEWS,
+   gerada por build-pwa.ps1 a partir de novidades.json). Quem acabou de instalar não vê: não há o que comparar. */
+const NEWS = Array.isArray(window.APP_NEWS) ? window.APP_NEWS : [];
+async function checkNews(){
+  const v = window.APP_VERSION; if(!v) return;
+  if((await kvGet("newsSeen")) === v) return;
+  if(!NEWS.length){ await kvSet("newsSeen", v); return; }
+  openNews(true);
+}
+function openNews(firstTime){
+  if(!NEWS.length){ toast("Nenhuma novidade registrada para esta versão"); return; }
+  const check = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  openSheet(`<div class="news-h"><span class="news-tag">Novidades</span><span class="news-ver">${esc(window.APP_VERSION || "")}${IS_TESTE ? " · teste" : ""}</span></div>
+    <h3>${firstTime ? "O app foi atualizado" : "Novidades desta versão"}</h3>
+    <ul class="news">${NEWS.map(n => `<li><span class="ic" aria-hidden="true">${check}</span><span><b>${esc(n.t)}</b>${n.d ? `<span>${esc(n.d)}</span>` : ""}</span></li>`).join("")}</ul>
+    <div class="acts"><button class="btn pri" id="nwOk" type="button">Entendi</button></div>`);
+  $("#nwOk").onclick = closeSheet;
+  kvSet("newsSeen", window.APP_VERSION);
+}
 function confirmSheet(title, text, okLabel){
   return new Promise(res => {
     openSheet(`<h3>${esc(title)}</h3><p>${esc(text)}</p><div class="acts"><button class="btn" id="cNo" type="button">Cancelar</button><button class="btn pri" id="cOk" type="button">${esc(okLabel)}</button></div>`);
