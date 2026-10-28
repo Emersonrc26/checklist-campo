@@ -12,11 +12,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v10"; window.APP_NEWS = [{"t":"Fotos na galeria","d":"A foto tirada pelo botão Tirar foto agora também fica salva no celular (álbum Download da galeria), em tamanho reduzido."},{"t":"Pode desligar","d":"Em Ajustes, desmarque Salvar na galeria as fotos tiradas pelo app."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v11"; window.APP_NEWS = [{"t":"Escolha do cliente","d":"No menu ☰, alterne entre Vale, Clientes Variados e JobCard\u0027s."},{"t":"Clientes Variados","d":"MTM Doppler, SARx, Series e Corretiva geral, sem o campo OM."},{"t":"JobCard\u0027s","d":"Checklists MTM RAR, SARx e RGR com lista de materiais, sem fotos."},{"t":"Foto do espaço em disco","d":"Na seção Software dos MTM, o item Verificar espaço em disco tem uma foto opcional."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
-<body><title>Relatórios GPBR - VALE</title>
+<body><title>Relatórios GPBR</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 
 <link rel="stylesheet" href="fonts.css">
@@ -131,7 +131,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
 .item:first-child{border-top:0;padding-top:0}
 .item-h{display:flex;gap:10px;align-items:flex-start;font-weight:600}
 .sn{font-family:var(--mono);font-size:13px;color:var(--muted);min-width:24px;padding-top:2px;font-variant-numeric:tabular-nums}
-.item-h .it{flex:1;min-width:0}
+.item-h .it{flex:1;min-width:0;overflow-wrap:anywhere}
+.cod{font-family:var(--mono);font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;white-space:nowrap}
 .item-h input{font-weight:600}
 .seg{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:6px}
 .seg.wide{grid-template-columns:repeat(2,1fr)}
@@ -225,6 +226,29 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
 .priv-meta{font-size:12.5px}
 .privbox{border-top:1px solid var(--line);padding-top:14px;margin-top:4px;display:flex;flex-direction:column;gap:8px}
 .privbox span{font-size:14px;color:var(--muted)}
+/* painel lateral de clientes */
+.drawer{position:fixed;inset:0;z-index:45;background:rgba(8,12,14,0);transition:background .2s}
+.drawer.open{background:rgba(8,12,14,.55)}
+.drawer-panel{position:absolute;top:0;bottom:0;left:0;width:min(86vw,340px);background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:14px;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));transform:translateX(-100%);transition:transform .22s ease;overflow-y:auto}
+.drawer.open .drawer-panel{transform:none}
+.drawer-h{display:flex;align-items:center;gap:10px}
+.drawer-h h2{flex:1;margin:0;font-family:var(--display);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.drawer-h .icon-btn{color:var(--ink);border-color:var(--line)}
+.drawer-p{margin:0;color:var(--muted);font-size:14px}
+.client-list{display:flex;flex-direction:column;gap:10px}
+.client-opt{display:flex;gap:12px;align-items:flex-start;text-align:left;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.client-opt .dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--muted);flex:none;margin-top:2px}
+.client-opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.client-opt.on .dot{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 45%,transparent 50%)}
+.client-opt .txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.client-opt b{font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.02em}
+.client-opt span span,.client-opt .txt>span{font-size:13.5px;color:var(--muted)}
+.client-opt small{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.04em;text-transform:uppercase}
+.drawer-foot{margin:auto 0 0;font-size:12px;color:var(--muted)}
+.client-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px 6px 10px;margin-bottom:12px;font-size:14px}
+.client-chip svg{width:18px;height:18px}
+.client-chip .sw{color:var(--accent);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}
 .credit{margin:28px 0 8px;text-align:center;font-size:12.5px;color:var(--muted);letter-spacing:.04em}
 .credit b{color:var(--ink);font-weight:600}
 .ver-link{background:none;border:0;padding:0;font:inherit;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
@@ -266,11 +290,19 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
 <div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <div class="splash" id="splash" role="button" tabindex="0" aria-label="Abrir os relatórios">
   <svg viewBox="0 0 96 96" aria-hidden="true"><rect x="20" y="14" width="56" height="74" rx="4" fill="#D9640A"/><rect x="26" y="22" width="44" height="60" rx="2" fill="#F2F5F4"/><rect x="36" y="9" width="24" height="11" rx="3" fill="#15202B" stroke="#D9640A" stroke-width="3"/><path d="M35 52l9 9 17-20" fill="none" stroke="#1D8549" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  <h1>Relatórios<br>GPBR - VALE</h1>
+  <h1>Relatórios<br>GPBR</h1>
   <p>Inspeção · Preventiva · Corretiva</p>
   <p class="teste-tag" id="splashTeste" hidden>VERSÃO DE TESTE</p>
   <div class="load"><i></i></div>
   <div class="dev">Desenvolvido por<b>Emerson Costa</b></div>
+</div>
+<div class="drawer" id="drawer" hidden>
+  <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <div class="drawer-h"><h2 id="drawerTitle">Cliente do relatório</h2><button class="icon-btn" data-act="drawer-close" aria-label="Fechar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <p class="drawer-p">Escolha para qual cliente você vai fazer o relatório. A tela inicial mostra só os modelos e os relatórios desse cliente.</p>
+    <div class="client-list" id="clientList" role="radiogroup" aria-label="Cliente"></div>
+    <p class="drawer-foot">Relatórios GPBR · Desenvolvido por Emerson Costa</p>
+  </aside>
 </div>
 <div class="toast" id="toast" role="status"></div>
 <div class="busy" id="busy" hidden><div><span class="spin"></span><span id="busyTxt">Gerando PDF…</span></div></div>
@@ -288,7 +320,9 @@ const TONE = {"Bom":"ok","Reparar":"warn","Substituir":"bad","N/D":"na","Sim":"o
 
 const SOLAR = ["Limpeza dos painéis solares","Reaperto do painel elétrico","Teste dos componentes (DC/DC, inversor, controlador)",{t:"Verificar tensão do banco de baterias",unit:"V"},"Verificar condição dos polos das baterias","Checar conectores MC4 dos painéis solares","Checar limpeza e conservação do container"];
 const SOLAR_PH = ["Limpeza dos painéis solares","Tensão do banco de baterias","Condição dos polos das baterias"];
-const SOFTWARE = ["Verificar processamento de dados","Verificar se há atualizações de software disponíveis","Verificar atualização em tempo real","Verificar licenças do sistema","Verificar espaço em disco","Verificar atualizações do Windows","Realizar limpeza de logs","Verificar data quality"];
+// photo: o item ganha uma foto opcional (aparece no PDF logo abaixo da tabela da seção)
+const DISCO = {t:"Verificar espaço em disco", photo:"Espaço em disco"};
+const SOFTWARE = ["Verificar processamento de dados","Verificar se há atualizações de software disponíveis","Verificar atualização em tempo real","Verificar licenças do sistema",DISCO,"Verificar atualizações do Windows","Realizar limpeza de logs","Verificar data quality"];
 const FINAL = {type:"final", title:"Informações adicionais"};
 const EXTRA = {type:"photos", title:"Fotos adicionais", groups:["Outras evidências"], free:true, optional:true};
 const T_PREV = "RELATÓRIO DE MANUTENÇÃO PREVENTIVA GROUNDPROBE";
@@ -320,7 +354,7 @@ const TEMPLATES = [
     {type:"checklist", title:"Radar", items:["Instalações físicas do radar","Condições dos cabeamentos do sistema","Condições do aterramento do sistema","Limpeza e conservação do radar","Nivelamento do radar","Condições da Weather Station","Verificar limpeza e alinhamento da câmera","Checar comunicação entre os dispositivos de rede","Checar alimentação e estado da REM","Condições gerais da praça de monitoramento","Condições da antena do radar"],
       photos:["Instalações físicas do radar","Condições dos cabeamentos do sistema","Condições do aterramento do sistema","Organização da praça de monitoramento","Nivelamento do radar","Weather Station","Câmera","Tool box","R.E.M"]},
     {type:"checklist", title:"Sistema solar", items:["Limpeza dos painéis solares","Reaperto das conexões elétricas","Teste dos componentes (DC/DC, inversor, controlador)",{t:"Verificar tensão do banco de baterias",unit:"V"},"Verificar condição dos polos das baterias","Checar conectores MC4 dos painéis solares","Checar limpeza e conservação do sistema"], photos:SOLAR_PH},
-    {type:"checklist", title:"Software", items:["Verificar processamento de dados",{t:"Versão do software instalado",unit:"ver."},"Verificar atualização em tempo real","Verificar licenças do sistema","Verificar espaço em disco","Verificar atualizações do Windows","Realizar limpeza de logs","Verificar data quality"], photos:[]},
+    {type:"checklist", title:"Software", items:["Verificar processamento de dados",{t:"Versão do software instalado",unit:"ver."},"Verificar atualização em tempo real","Verificar licenças do sistema",DISCO,"Verificar atualizações do Windows","Realizar limpeza de logs","Verificar data quality"], photos:[]},
     {type:"checklist", title:"Manutenção de trailer", items:["Verificar integridade física do trailer","Limpeza do trailer"], photos:["Trailer"]},
     {type:"checklist", title:"RAPS", items:["Inspeção da parte física","Inspeção do motor","Limpeza/organização do interior da RAPS","Inspeção do cano de descarga","Inspeção da solenoide do acelerador","Nível dos fluidos do motor","Inspeção das mangueiras e tubulações","Inspeção do sistema elétrico"],
       photos:["Parte física","Parte interna","Filtros","Mangueiras e abraçadeiras","Conexões elétricas"]},
@@ -340,7 +374,135 @@ const TEMPLATES = [
     {type:"photos", title:"Fotos e evidências", groups:["Registro fotográfico"], free:true},
     {type:"fields", title:"Observações adicionais", fields:[{id:"obsAd",label:"Observações",area:true}]} ]},
 ];
+
+/* ============ JobCard's: checklist técnico de MTM + lista de materiais (planilhas JobCard) ============ */
+/* JOBCARDS:INICIO (gerado por ferramentas\gerar-jobcards.ps1 a partir das planilhas MTM v20261022; não edite à mão) */
+const JC_DATA = {
+rar: [["Preparação",["Verifique se você possui todas as chaves, permissões necessárias para ter acesso físico ao sistema e documentações de segurança.","Exporte e salve os logs dos últimos 30 dias usando a ferramenta MonitorIQ Log Files Export.","Inspecione o ciclo de carga da fonte de alimentação conforme a KB00073: Guia: Ciclos de Carga do RAPS. Anexe os arquivos CSV e uma captura de tela do gráfico do ciclo de carga. Siga a KB00280: Procedimento: Condicionamento das Baterias RAPS-CPS para recondicionar as baterias da fonte de alimentação.","Revise todas as ocorrências abertas no Jira/Requests (Dynaway), especialmente Roll-Out, relacionadas ao radar e determine quais serão tratadas durante o serviço. (solicitações e Roll-Out no D365)","Revise a JIRA de MTM mais recente para identificar os problemas registrados que devem ser tratados durante este serviço.","Verifique se o conteúdo de C:\\TechSpec_Tools no seu notebook está disponível offline.","Obtenha as ferramentas especiais ou os suprimentos necessários para as tarefas que serão executadas durante este serviço.","Verifique os diagnósticos do radar, por exemplo, umidade e tensões. Verifique o TPS conforme a TA092. Anexe os arquivos CSV e uma captura de tela do gráfico do TPS.","Verifique os dados de diagnóstico no MonitorIQ para garantir que os níveis de umidade estejam abaixo de 50%. Valores acima de 50% indicam a necessidade de substituir o dessecante.","Imprima toda a documentação necessária, listas de verificação, procedimentos de teste etc. que será utilizada em campo antes da viagem ao local de trabalho.","Verifique a porcentagem de Retry do motor de azimute. Acima de 30%, planejar substituição. http://confluence.groundprobe.com:8090/display/L3WIP/Azimuth+Health+Analysis","Verifique a necessidade de substituir a esteira porta-cabos (30 meses). Consulte a data da última substituição no Jira, em Materiais MTM, ou considere a data de implantação. Registre a última substituição.","Execute o teste do motor e avalie a necessidade de substituir o atuador de elevação."]],
+  ["Upload para a Web",["Se aplicável ao local, pois nem todos os locais utilizam o WebUpload, consulte o Manual do Usuário do Web Upload e verifique se o WebUpload está funcionando e se os arquivos estão sendo enviados."]],
+  ["Verificações de rede",["Verificar o mapa de rede do radar e criar um caso não exista. Atualizar quando necessário e anexar o diagrama de rede na JIRA de MTM.","Verificar e atualizar o RouterOS e o script de todos os dispositivos da rede quando estiverem desatualizados, incluindo REM, PowerBox e rádios."]],
+  ["Fonte de alimentação",["Inspecione o funcionamento das lâmpadas de sinalização e verifique se a fiação das lâmpadas possui fios expostos. Retire o isolamento da fonte de alimentação e observe o funcionamento das lâmpadas. Identifique e corrija as falhas encontradas.","Avalie os ciclos de carga da fonte de alimentação conforme a KB00073: Guia: Ciclos de Carga do RAPS. Investigue quaisquer divergências encontradas.","Anexe uma captura de tela do ciclo de carga no Dynaway.","Realizar a troca de óleo do motor da RAPS/CPS2. Óleo 15W40","Inspecione os elementos de fixação do tanque de combustível quanto a parafusos soltos, danos e desgaste anormal das cintas. Aperte os parafusos, investigue as causas e substitua as cintas se estiverem danificadas ou excessivamente desgastadas.","Inspecione o extintor de incêndio conforme o treinamento padrão para extintores. Substitua-a se forem encontradas divergências. (Se aplicável)","Registre quaisquer etiquetas desbotadas ou ilegíveis no gabinete da fonte de alimentação. Solicite etiquetas de reposição conforme necessário.","Inspecione a fonte de alimentação e a estrutura de montagem quanto a danos ou trincas. Registre os danos encontrados em uma JIRA e escale para o nível dois.","Inspecione os parafusos de fixação da fonte de alimentação quanto a folgas. Aperte os parafusos soltos.","Remova o pré-filtro da entrada de ar do motor e verifique internamente se há danos e sujeira. Limpe se estiver sujo, substitua se houver danos ou reinstale o pré-filtro se estiver em boas condições.","Inspecione as dobradiças da tampa e das portas da fonte de alimentação, verificando se operam suavemente e se estão livres de corrosão. Substitua-as se o movimento não for suave ou se a corrosão afetar o funcionamento.","Inspecione as vedações contra intempéries da tampa e das portas da fonte de alimentação quanto a danos ou deterioração. Substitua quando mais de 1/4 do isolamento estiver danificado ou deteriorado.","Inspecione o compartimento do motor quanto a sinais de vazamento de fluidos. Identifique a causa e corrija os vazamentos encontrados.","Limpe o interior da RAPS.","Inspecione a chave seccionadora do compartimento da fonte de alimentação quanto a danos ou deterioração. Substitua-a se forem encontrados defeitos.","Inspecione todas as abraçadeiras das mangueiras quanto ao aperto e as condições de uso. Aperte as abraçadeiras soltas e substitua as defeituosas.","Inspecione as abraçadeiras do escapamento quanto a folgas. Aperte todas as abraçadeiras soltas encontradas.","Inspecione a tubulação e o(s) silencioso(s) do escapamento quanto a trincas. Repare trincas de até 4 cm de comprimento e furos de até 0,5 cm x 2 cm. Substitua o escapamento se houver trincas maiores que 4 cm ou furos maiores que 0,5 cm x 2 cm.","Inspecione todos os fios e cabos dentro da fonte de alimentação quanto a condutores expostos, sinais de superaquecimento, conexões mecânicas firmes, esmagamentos ou dobras e organização/fixação adequada do chicote.","Inspecione os terminais das baterias quanto a corrosão e firmeza das conexões dos cabos. Limpe a corrosão encontrada e aperte as conexões soltas.","RAPS (O/Y): consulte a KB00056: Procedimento: Desativação da RAPS(Y) e RAPS(O) para remover a placa BMS e facilitar a inspeção dos terminais das baterias.","Inspecione as cintas das baterias e a estrutura de retenção quanto a danos, desgaste anormal e fixação adequada. Reaperte os mecanismos soltos e substitua os mecanismos de fixação desgastados ou danificados.","Inspecione as conexões de saída de energia para a eletrônica do radar (Anderson / Camloc) quanto a firmeza e corrosão. Limpe e aperte as conexões sujas ou soltas.","Inspecione as conexões dos cabos de alta potência quanto a organização adequada.","RAPS Y: utilize a KB00265: Procedimento: Verificações das conexões do RAPS(Y). Corrija quaisquer divergências encontradas.","Inspecione o solenoide do acelerador quanto a fixação firme e operação suave. Limpe e ajuste conforme o documento apropriado: KB00287: Procedimento: Ajuste do Solenoide do Acelerador Yanmar Série TF do RAPS(Y). Verifique se o parafuso de trava de alta rotação está instalado e firme.","Trocar filtro combustível primário","Troca do filtro de ar","Realizar a troca do filtro de combustível secundário","Meça as tensões das baterias de partida e auxiliar. Se forem inferiores a 12,0 Vcc, investigue o sistema de carga.","Verifique o funcionamento das chaves isoladoras e dos disjuntores medindo a continuidade entre os polos quando acionados e desacionados. Substitua-os se houver continuidade quando as chaves isoladoras ou os disjuntores estiverem acionados (abertos).","Consulte a TA-030 e a TA-031, inspecione e verifique o funcionamento do botão de emergência.","Lave, limpe ou substitua o filtro do compartimento da fonte de alimentação.","Verifique a continuidade entre os pinos fase, neutro e terra do conector externo e o aterramento do gabinete. Deve haver continuidade entre o pino terra e o aterramento do gabinete, e não deve haver continuidade entre fase, neutro e o aterramento do gabinete.","Confirme se uma tensão CA aceitável está sendo fornecida ao carregador CA. Conecte a alimentação ao carregador CA e certifique-se de que nenhum erro seja indicado pelos LEDs ou pelo visor. Investigue os problemas encontrados usando os manuais do carregador CA.","Se o sistema for alimentado por energia CA, siga o procedimento no Confluence uma vez a cada 6 meses: http://confluence.groundprobe.com:8090/x/f49nBw","Execute o serviço de carga completa das baterias da fonte de alimentação. Opere o RAPS por no mínimo 8 horas e no máximo 16 horas. Investigue quaisquer divergências encontradas.","RAPS (O/Y): ligue a caixa de controle e altere o BMS de Auto para Run. Ao final do ciclo de carga, a corrente de entrada deve ser inferior a 8 A e a tensão de entrada deve ser 13,9 Vcc (+/- 0,1 V). Retorne o BMS para Auto, mantenha a caixa de controle ligada e sincronize o BMS."]],
+  ["Componentes instalados",["Compare o tipo e o número de série dos componentes registrados na JIRA de MTM anterior com os componentes instalados no radar. Registre os números de série corretos na JIRA de MTM.","Registre as horas de operação do sistema e da fonte de alimentação no campo da JIRA."]],
+  ["Cabos e conectores",["Inspecione os cabos externos quanto a organização correta, desgaste anormal, fios expostos, dobras e danos físicos. Substitua os cabos que estiverem sem condições de uso.","Inspecione a organização dos cabos quanto a pontos de fixação seguros e condições gerais de uso. Reaperte ou substitua os elementos de fixação quando estiverem defeituosos.","Inspecione todos os conectores de cabos coaxiais que não estejam selados conforme a KB00038, verificando a fixação correta nas extremidades dos cabos. Reaperte o conector ou substitua o cabo e aplique a KB00038.","Inspecione todos os cabos com conectores de especificação militar quanto a backshells soltos ou danificados. Reaperte os backshells soltos e substitua os cabos com backshells danificados.","Verifique a tensão de alimentação na Unidade de Distribuição de Energia. A tensão deve medir de 12 a 13,5 Vcc (+/- 0,5 Vcc). Investigue quaisquer divergências encontradas.","Inspecione o encoder quanto a entrada de água e reaplique Loctite nos parafusos.","Inspecione os elementos de fixação e os dispositivos dos componentes principais quanto a danos e condições gerais de uso. Substitua os elementos danificados."]],
+  ["Estrutura e carreta",["Inspecione a antena/prato quanto a deformações. Fotografe quaisquer danos encontrados, registre-os na JIRA e escale para o Gerente Técnico.","Inspecione a antena FX e verifique se as duas antenas estão completamente alinhadas.","Inspecione a fiação e o conector do chicote da carreta quanto a desgaste anormal, fios expostos, dobras ou danos físicos. Faça reparos ou substitua os itens com divergências.","Inspecione e ajuste o freio de mão da carreta conforme a KB00283: Procedimento: Ajuste do Freio de Mão Mecânico da Carreta.","Adicione graxa ao freio de mão da carreta até que a graxa nova apareça na junta entre a carcaça e o eixo. (KB00127, etapa 46, figura 20)","Confirme se as porcas das rodas da carreta estão apertadas.","Inspecione as rodas e os pneus conforme as etapas 8 a 10 da KB0012. Corrija a pressão dos pneus conforme necessário.","Inspecione a suspensão da carreta conforme as etapas 11 a 13 da KB00127.","Inspecione as soldas e os parafusos dos pontos de fixação da estrutura em A da carreta quanto a trincas ou danos físicos. Corrija os problemas encontrados.","Confirme se os três macacos estão funcionando.","Confirme se os macacos podem girar e travar nas posições vertical e horizontal.","Estenda os macacos da carreta até 35 cm, medidos da sapata de apoio até a borda, verificando se há travamento durante a operação.","Aplique no máximo duas bombadas de graxa na cabeça e na placa giratória do macaco da carreta.","Inspecione o mecanismo de fixação do tripé, como parafusos ou travas de retenção, quanto a danos e condições de uso. Substitua as peças danificadas.","Verifique e inspecione os pinos de trava das pernas do tripé e os grampos R. Substitua os itens ausentes.","Se a carreta possuir correntes de segurança para reboque, inspecione-as quanto a elos danificados ou rompidos. Substitua as correntes danificadas.","Lave o SSR.","Abaixe o mastro da estação meteorológica e inspecione o corpo da estação e os sensores ultrassônicos quanto a danos. Limpe a placa do sensor de chuva. Substitua a estação meteorológica se houver danos.","Verifique se as pernas do tripé estão livres de ferrugem. Se houver ferrugem, remova-a com uma lixa de granulometria adequada e aplique uma camada generosa de spray de proteção anticorrosiva.","Verifique os dispositivos instalados no topo do mastro da estação meteorológica, como luz estroboscópica, antena etc. Se houver dispositivos adicionais que não sejam da GP, tire uma foto e envie para análise da engenharia.","Referência: http://jira.groundprobe.net/browse/SRT118-170; Alerta de Segurança SA012","Limpe as escovas dos macacos da carreta. (Se aplicável)","Inspecione a parte inferior da carreta. Confirme se as porcas das rodas estão apertadas e se os indicadores estão instalados. Confirme se as porcas dos rolamentos das rodas estão apertadas.","Limpe e retoque as áreas pintadas que estejam danificadas ou enferrujadas."]],
+  ["Tela da interface e câmera",["Inspecione a tela da interface quanto a danos e funcionamento.","Limpe a tela/interface do usuário.","Verifique o funcionamento do hub USB. Investigue os problemas encontrados.","Inspecione as cores da tela/interface quanto a desbotamento, manchas, mistura de cores e esquema de cores correto. Investigue os problemas e substitua a tela/interface se não for possível solucioná-los.","Verifique se a tela sensível ao toque responde aos comandos. Investigue os problemas encontrados.","Limpe o visor da câmera e inspecione quanto a condensação. Se encontrada, abra a caixa da câmera, seque o interior, instale um saco de dessecante, vede novamente a caixa e depois remonte e alinhe a câmera."]],
+  ["Verificações físicas",["Movimente manualmente a cabeça do radar, ou prato, em azimute nas duas direções, verificando se o movimento é suave e firme, sem sons anormais, como rangidos, atritos ou trepidações.","Consulte a KB00161 e verifique a folga do atuador de elevação. Substitua o atuador se o teste falhar.","Utilizando a KB00192, inspecione o comprimento das escovas do motor do atuador de elevação.","Siga a TA059 para distribuir a graxa do atuador de elevação.","Limpe e inspecione o amortecedor a gás quanto a vazamentos e danos. Avalie sua condição conforme a KB00194: Procedimento: Avaliação da Condição do Amortecedor a Gas. Substitua-o se estiver defeituoso."]],
+  ["Discos rígidos e sistema operacional",["Limpeza do computador PMP utilizando soprador","Verifique o espaço disponível em disco. Se houver menos de 4 GB, confirme se os dados da parede possuem backup e exclua todas as pastas de parede, exceto a atual. Em seguida, esvazie a lixeira. Anexe uma captura de tela da capacidade do disco.","Execute o utilitário de desfragmentação de disco, mesmo que ele informe que a execução não é necessária.","Confirme se o REM está protegido contra gravação. Se estiver desprotegido, habilite a proteção."]],
+  ["Versões de software do SSR",["Atualize o MonitorIQ para a versão mais recente disponível. Se o PMP não atender aos requisitos do sistema, informe.","Registre os números das versões de software instaladas no radar e no PMP.","Licença do MonitorIQ | Verifique se a licença utilizada é a correta para este local e se está válida. Registre a data de vencimento. MonitorIQ | Arquivo | Ajuda: confirme se a data de vencimento do MonitorIQ é superior a 1 mês."]],
+  ["Parâmetros do SSR Control",["Salve uma cópia das configurações do SSR Control e anexe-a a JIRA de MTM."]],
+  ["Teste do radar no SSR Control",["Execute o procedimento Test Radar conforme SSR-Control Test Radar no Confluence. Referência: https://groundprobe.atlassian.net/wiki/spaces/S3TM/pages/232162117/SSR-XT+RF+Troubleshooting"]],
+  ["Teste do motor no SSR Control",["Avalie a condição do eixo de elevação utilizando a KB00193."]],
+  ["PMP",["Confirmar que o PMP está georreferenciado com DTM.","Confirmar que a exportação automática de dados está configurada.","Confirmar que a ortofoto está aplicada.","Registrar as configurações de hardware do PMP.","Confirmar que o backup automático está habilitado.","Verificar a versão do software instalada no PMP e no radar. Todas as instalações devem utilizar a mesma versão. Caso haja divergência, atualizar as versões mais antigas para a versão mais recente instalada nos demais equipamentos.","Verificar as configurações para o PMP ligar quando o computador for conectado à rede elétrica."]]],
+sarx: [["Preparação",["Verifique se possui todas as chaves e permissões necessárias para acessar fisicamente o sistema.","Inspecione o gráfico de entrada da fonte de alimentação e verifique os logs do UPS.","Revise todas as ocorrências abertas no Jira, especialmente as JIRAs de Roll-Out relacionadas ao radar, e determine quais serão tratadas durante o serviço.","Revise a JIRA de MTM mais recente e identifique as ocorrências registradas que devem ser tratadas durante este serviço.","Exporte e salve os logs dos últimos 15 dias utilizando a ferramenta Log Files Export do MonitorIQ","Acompanhe as peças solicitadas para este radar no Job Card. Verifique a disponibilidade de peças para os serviços abertos. Solicite as peças que ainda não estejam registradas como solicitadas ou recebidas no Job Card.","Verifique se o conteúdo de C:\\TechSpec_Tools no notebook está atualizado.","Providencie as ferramentas especiais e os materiais necessários para as tarefas que serão executadas durante este serviço.","Verifique os diagnósticos do radar, como TPS, temperatura e tensões. Anexe os arquivos CSV e uma captura de tela do gráfico de TPS.","Antes da viagem ao site, imprima toda a documentação necessária para uso em campo, como checklists e procedimentos de teste."]],
+  ["SSR-Viewer e Watchdog de hardware",["Conforme o manual do software, confirme que o PMP está configurado e apto a operar em uma condição de monitoramento crítico.","Verifique no BIOS se o PMP está configurado para ligar automaticamente após o retorno da alimentação CA.","Verifique as versões do software instaladas no PMP, no radar e nos computadores de monitoramento. Todas as instalações devem utilizar a mesma versão. Se houver divergência, atualize as versões antigas para a versão mais recente instalada nos demais equipamentos.","Compare os endereços IP com o mapa de rede. Atualize o mapa se houver divergências. Caso o mapa não exista, crie-o utilizando o modelo da KB00140.","Compare as máscaras de sub-rede com o mapa de rede. Atualize o mapa se houver divergências. Caso o mapa não exista, crie-o utilizando o modelo da KB00140.","Compare os gateways padrão com o mapa de rede. Atualize o mapa se houver divergências. Caso o mapa não exista, crie-o utilizando o modelo da KB00140."]],
+  ["Upload para a Web",["Se o site utilizar WebUpload, consulte o Manual do Usuário do Web Upload e confirme que o serviço está funcionando e que os arquivos estão sendo enviados."]],
+  ["Verificações de rede",["Execute as verificações dos dispositivos de comunicação de rede conforme a KB00250: Procedimento: Checklist de Comunicações da MTM."]],
+  ["Verificação do computador 10.1.1.111",["Software LEDA: confirme que o aplicativo está aberto. E sem mensagens de erro.","Scan Image: confirme que a imagem de posição/frequência está preenchida.","Scan Image: confirme a quantidade de medições adquiridas por varredura (Macq). O valor deve ser maior que zero, normalmente entre 400 e 800, dependendo do tamanho da varredura.","Instruments Table: confirme que todos os itens estão verdes.","Temperature Control Table: confirme que todas as temperaturas estão na faixa de -3 °C a 45 °C.","Status Table | Scan No: confirme que o número da varredura aumenta a cada nova varredura.","Status Table | Pos cm: confirme que a posição da cabeça de medição está mudando.","Confirme que o espaço livre é superior a 400 GB e que o tempo estimado é superior a 14 dias.","UPS Status: confirme que todos os itens estão verdes.","Maintenance Status: confirme que nenhuma manutenção é necessária.","10.1.1.111 | Data/Fuso horário/Hora: confirme que a data, o fuso horário e a hora estão configurados corretamente para GMT 0.","Licença do software: examine a janela do LEDA e procure uma data de vencimento. APROVADO: nenhuma data de vencimento visível, indicando licença completa. REPROVADO: data de vencimento visível, indicando licença temporária."]],
+  ["Verificação do computador 10.1.1.114",["Software ChainMobile: confirme que o aplicativo está aberto.","Na guia PATH | Connection | Lisa Mobile Status: confirme que a luz de status está verde.","Na guia PATH | Connection | NAS Status: confirme que a luz de status está verde.","Last Single Image Processed: confirme que a imagem da varredura está presente.","Last Single Image Processed: verifique o carimbo de data e hora do arquivo no formato AAAA_MM_DD_HH_MM_SS_NumeroDaVarredura.for. A data e hora do computador 10.1.1.114 devem estar em GMT 0, e o carimbo deve estar a menos de cinco minutos do horário atual.","Last Single ITF Corrected: confirme que a imagem da varredura está presente.","Last 8H Average Image Processed: confirme que a imagem está presente quando a parede possui mais de 8 horas de dados.","Last 24H Average Image Processed: confirme que a imagem está presente quando a parede possui mais de 24 horas de dados.","Last Single Image Processed Quality: avalie se a imagem apresenta qualidade adequada e não contém artefatos ou padrões relacionados aos dados subjacentes.","10.1.1.114 | Data/Fuso horário/Hora: confirme que a data, o fuso horário e a hora estão configurados corretamente para GMT 0.","Licença do software: examine a janela do CHAIN MOBILE e procure uma data de vencimento. APROVADO: nenhuma data de vencimento visível, indicando licença completa. REPROVADO: data de vencimento visível, indicando licença temporária."]],
+  ["Verificação do computador 10.1.1.115",["Software SSR-Feeder: confirme que o aplicativo está aberto.","Status Lights: confirme que todas as luzes estão verdes.","Status Panel | Work in Progress: confirme que o nome da parede atual do LisaMobile está listado.","Status Panel | Wall in Progress: confirme que o nome da parede ativa da GroundProbe está listado.","ITF last 2 AVG Sg Images: confirme que a imagem da varredura está presente.","ITF last 2 AVG 08 Images: confirme que a imagem está presente quando a parede possui mais de 8 horas de dados.","ITF last 2 AVG 24 Images: confirme que a imagem está presente quando a parede possui mais de 24 horas de dados.","ITF last 2 AVG Sg Images: verifique os níveis de ruído do sinal que possam exigir alterações na máscara de céu. O resultado aceitável não deve apresentar interferência de ruído predominante.","ITF last 2 AVG Sg Images: verifique alterações anormais ou questionáveis de deformação. O resultado aceitável não deve apresentar alterações anormais predominantes.","10.1.1.115 | Data/Fuso horário/Hora: confirme que a data, o fuso horário e a hora estão configurados corretamente para GMT 0.","Licença do software: examine a janela do SSR-FEEDER e procure uma data de vencimento. APROVADO: nenhuma data de vencimento visível, indicando licença completa. REPROVADO: data de vencimento visível, indicando licença temporária."]],
+  ["Verificação do computador 10.1.1.130",["MIQ: confirme que o aplicativo abre e se conecta corretamente à pasta da parede ativa.","SSR-Viewer: confirme que a parede ativa está atualizada. A última varredura deve ter ocorrido nos últimos 15 minutos em relação ao horário do computador 10.1.1.130.","SSR-Viewer | Home | Timeline: confirme que não existem avisos de Reg Temperature nem alertas críticos. Consulte a linha do tempo de alertas.","SSR-Viewer | Diagnostics | NAS Space: confirme que o espaço livre é superior a 400 GB.","Licença do SSR-Viewer: confirme que a licença utilizada é a correta para o site e está válida. Registre a data de vencimento. Em MonitorIQ | File | Help, confirme que a validade restante é superior a um mês.","Espaço no disco de dados: abra Meu Computador e confirme que a unidade de dados possui mais de 20% de capacidade disponível. Normalmente deve ser a unidade D:\\Data. Em alguns sistemas SARx antigos, os dados podem estar na unidade C:\\, sem unidade secundária.","10.1.1.130 | Data/Fuso horário/Hora: configure o fuso horário e a hora local, iguais aos do PMP.","Anexe uma cópia do arquivo ssrctrl.cfg localizado em C:\\ProgramData | GroundProbe | SSR-Control | Config.","Verifique o alinhamento da câmera.","Verifique se existem registros de imagens invertidas. Em caso positivo, revise a configuração do VCS no SSR-SARx.","Atualize o SSR-Viewer para a versão mais recente disponível."]],
+  ["NAS",["Gerencie ou exclua os dados do NAS e do NAS externo conforme necessário."]],
+  ["SSR",["Substitua os filtros da PB.","Substitua os filtros da MH.","Inspecione visualmente toda a correia e as polias do Linear Positioner. Procure sinais de danos, rasgos ou limalhas metálicas e registre fotografias e vídeos.","Verifique a tensão da correia do Linear Positioner.","OUÇA ATENTAMENTE E BUSQUE POR RUÍDOS \"ANORMAIS\" NO LADO DA POLIA E NO LADO DO MOTOR (ESTALOS, OU RUÍDOS QUE SUGIRAM ROLAMENTOS QUEBRADOS/TRAVADOS OU EM MAU ESTADO).","Verificar alinhamento da correia conforme procedimento https://groundprobe.atlassian.net/wiki/spaces/SARTM/pages/232330561/GUIDE+Linear+Positioner+Belt+Tracking+Check","VERIFICAR O TENSIONAMENTO DA CORREIA E PROCEDER O AJUSTE CASO NECESSÁRIO - https://groundprobe.atlassian.net/wiki/spaces/SARTM/pages/232329811/GUIDE+Linear+Positioner+Belt+Pretension","Movimente manualmente a Measuring Head ao longo do Linear Positioner. O movimento deve ocorrer com relativa liberdade, sem travamentos.","Verifique o funcionamento das chaves. Interrompa a aquisição e teste as chaves. A chave de zero é normalmente fechada, enquanto as chaves de fim de curso são normalmente abertas.","Registre o número de série de cada componente: LP, MH, PB e VCS."]],
+  ["Verificações do PMP",["SSR-Viewer: confirme que o aplicativo está aberto e conectado corretamente à pasta da parede ativa.","SSR-Viewer: confirme que a parede ativa está atualizada. A última varredura deve ter ocorrido nos últimos cinco minutos em relação ao horário do PMP.","SSR-Viewer | Home | Timeline: verifique se existem alertas de Link Down na linha do tempo de alertas.","SSR-Viewer | Home | Timeline: verifique se existem alertas do SSR-Watchdog na linha do tempo de alertas.","SSR-Viewer | Home | System Status | Time Sync: confirme que o PMP e o SARx estão sincronizados.","SSR-Viewer | Analysis | Time Per Scan: avalie o gráfico de TPS. O resultado esperado é uma linha razoavelmente estável; picos ocasionais podem ser aceitáveis. Investigue agrupamentos ou aumento de picos e grandes oscilações no TPS.","Espaço no disco de dados: abra Meu Computador e confirme que a unidade onde a parede SARx está armazenada possui mais de 20% de capacidade disponível. Normalmente os dados devem estar em uma unidade secundária D:\\.","Licença do SSR-Viewer: confirme que a licença utilizada é a correta para o site e está válida. Registre a data de vencimento. Em SSR-Viewer | File | Help, confirme que a validade restante é superior a um mês."]],
+  ["Integração remota",["Confirme se o sistema está preparado para integração com softwares externos: georreferenciamento com DTM concluído; exportação automática de dados configurada; e configurações especiais solicitadas pelo cliente aplicadas no PMP."]]],
+rgr: [["Preparação",["Revise o JIRA e JobCard de MTM mais recente e identifique as ocorrências registradas que devem ser tratadas durante este serviço.","Revise todas as ocorrências abertas no Jira/Requests (Dynaway), especialmente Roll-Out relacionadas ao radar, e determine quais serão tratadas durante o serviço.","Siga o procedimento de manutenção e informe às pessoas envolvidas no monitoramento sobre a execução da manutenção e as atividades previstas.","Verifique se está portando as chaves para acesso ao local e permissões necessárias","Verifique a disponibilidade de peças para os serviços abertos. Solicite as peças que ainda não estejam registradas como solicitadas ou recebidas no Job Card.","Verifique se o conteúdo de C:\\TechSpec_Tools está atualizado e sincronizado com seu notebook.","Providencie as ferramentas especiais e os materiais necessários para as atividades que serão executadas durante este serviço.","Antes da viagem ao site, imprima e/ou salve no seu laptop toda a documentação necessária para uso em campo, como checklists e procedimentos de teste.","Solicitar o cliente para colocar o equipamento em modo de manutenção para evitar alarmes falsos durante os testes e procedimentos da MTM. Siga o procedimento de manutenção e comunique o início e o término das atividades."]],
+  ["Watchdog de hardware",["Inspecione os cabos do Watchdog quanto a dobras, fios expostos e firmeza das conexões mecânicas. Substitua qualquer cabo que não atenda aos critérios da inspeção.","Desconecte o cabo Ethernet do Watchdog. Em até 60 segundos, o Watchdog deve acionar o alarme sonoro e a luz vermelha de status. Se o alarme não for acionado, substitua o Watchdog. Após o acionamento, pressione o botão Mute, reconecte o cabo e confirme que a luz de status fica verde até 60 segundos após a reconexão.","Consulte o manual vigente do software e teste a funcionalidade do Watchdog.","Verifique e registre o número de série do Watchdog."]],
+  ["Verificações de rede",["Execute as verificações dos dispositivos de comunicação da rede. Registre os endereços IP de todos os componentes: PU, câmera, antena, roteador, rádio, switch."]],
+  ["RGR",["Inspecione visualmente a antena e limpe-a caso esteja suja.","Inspecione os cabos da antena e da câmera quanto a dobras, fios expostos e firmeza das conexões mecânicas. Substitua qualquer cabo que não atenda aos critérios da inspeção.","Inspecione os cabos da Adapter Box quanto a dobras, fios expostos e firmeza das conexões mecânicas. Substitua qualquer cabo que não atenda aos critérios da inspeção."]],
+  ["PU",["Limpe a tela do notebook.","Confirme que as saídas de ventilação do notebook estão desobstruídas. Se houver acúmulo de poeira, realize a limpeza com ar para garantir a refrigeração adequada.","Quando aplicável, confirme visualmente pelos LEDs que o carregador CA opera normalmente durante a conexão à alimentação CA.","Verifique as configurações de energia da PU","Execute os scripts para exportação dos logs e ajuste de data e hora.","Verifique se a configuração de rede está definida corretamente."]],
+  ["Conexões",["Verifique o reaperto de todas as conexões elétricas da PU, Adapter Box e Watchdog."]],
+  ["Software",["Verifique se o sistema está funcionando corretamente.","Verifique o espaço disponível no disco de dados. Abra Meu Computador e consulte a capacidade disponível na unidade de dados.","Registre as versões atuais dos softwares instalados."]],
+  ["Testes",["Em conjunto com equipe de monitoramento do cliente, faça teste de sanidade do radar"]],
+  ["Conclusão",["Ao concluir todas as tarefas, comunique o encerramento e autorize o retorno ao monitoramento normal."]]],
+/* [categoria, material, código, possui] */
+mat: [["Ferramentas especiais","Nível de bolha","",1],
+  ["Ferramentas especiais","Chave Allen para o braço do atuador","",1],
+  ["Ferramentas especiais","Calibrador de folga","",1],
+  ["Ferramentas especiais","Chave canhão para os parafusos traseiros do alternador","",1],
+  ["Ferramentas especiais","Chave para substituição do filtro CPS2","",1],
+  ["Geral","Fusíveis","",0],
+  ["Geral","Disjuntores","",0],
+  ["Geral","EPIs","",1],
+  ["Geral","Bolsa de ferramentas","",1],
+  ["Geral","Chaves e permissões necessárias para acesso físico ao sistema (CADEADOS)","",1],
+  ["Geral","Peças adicionais identificadas nas JIRAs abertas ou na última MTM","",0],
+  ["Geral","Fita isolante","",0],
+  ["Geral","Fita de autofusão","",0],
+  ["Geral","Abraçadeira de nylon","",0],
+  ["Geral","Limpa-contato elétrico","",0],
+  ["Geral","Desengripante","",0],
+  ["Geral","Pen drive","",1],
+  ["RAPS","Filtro primário","BR0079",0],
+  ["RAPS","Filtro secundário","BR0095",0],
+  ["RAPS","Filtro LTK","C 3991",0],
+  ["RAPS","Filtro de ar","BR0078",0],
+  ["RAPS","Filtro da RAPS","C-0692",0],
+  ["RAPS","Óleo lubrificante 15W40","",0],
+  ["RAPS","Fluido refrigerante e água","",0],
+  ["RAPS","Funil para óleo","",1],
+  ["RAPS","Funil para fluido","",1],
+  ["RAPS","Galão para descarte de óleo","",1],
+  ["RAPS","Sensor de pressão","C3505",0],
+  ["RAPS","Sensor de temperatura","C1012",0],
+  ["RAPS","Estopa para limpeza","",0],
+  ["RAPS","Manta absorvente para fluidos","",0],
+  ["RAPS","Junta de motor","BR7953",0],
+  ["RAPS","Loctite","",0],
+  ["RAPS","Interface/cabo USB Mastervolt","",1],
+  ["RAPS","Fusíveis","",0],
+  ["RAPS","Relés","",0],
+  ["RAPS","Calibrador de folga","",1],
+  ["RAR","Escova de motor","C 3548",0],
+  ["RAR","Dessecante 25 g","C0159",0],
+  ["RAR","Dessecante 50 g","C-0623",0],
+  ["RAR","Cabo 40m","",0],
+  ["RAR","Cabo 80m","",0],
+  ["Geral","Injetor PoE","",0],
+  ["Geral","Fonte CA/CC","",0],
+  ["Geral","Cabos de rede montados","",0],
+  ["Geral","Conector RJ45","",0],
+  ["Geral","Alicate de crimpagem","",1],
+  ["SARx","Filtros da Measuring Head (MH)","GP-36308",0],
+  ["SARx","Filtros da Power Base (PB)","GP-36980",0]]};
+/* JOBCARDS:FIM */
+const JC_ST = ["Concluído","Em andamento","Bloqueado","N/A"];
+const MAT_ST = ["Separado","Parcial","Indisponível","N/A"];
+const MAT_POS = ["Possui","Não possui","N/A"];
+Object.assign(TONE, {"Concluído":"ok","Em andamento":"warn","Bloqueado":"bad","Separado":"ok","Parcial":"warn","Indisponível":"bad","Possui":"ok","Não possui":"bad"});
+// respostas que pedem um comentário
+const NEED = new Set(["Reparar","Substituir","Em andamento","Bloqueado","Parcial","Indisponível","Não possui"]);
+const needPh = st => st==="Reparar" || st==="Substituir" ? "Descreva o problema encontrado" : "Descreva o motivo e a ação necessária";
+const JC_LABELS = {om:"JIRA MTM", local:"Cliente / site", tag:"Sistema / TAG"};
+// materiais: os gerais vão em todos; cada sistema recebe só as categorias dele
+function jobcard(id, modelo, data, cats){
+  const mats = cats.map(c => ({type:"checklist", mat:true, title:"Materiais: "+c, opts:MAT_ST, photos:[],
+    items: JC_DATA.mat.filter(m => m[0]===c).map(([, t, cod, pos]) => pos ? {t, cod, opts:MAT_POS} : {t, cod, unit:"un.", ph:"Qtd."})}));
+  return {id, kind:"JobCard", client:"jobcards", name:"MTM "+modelo, short:"JobCard_MTM_"+modelo, title:`JOBCARD MTM ${modelo} · CHECKLIST DE MANUTENÇÃO PREVENTIVA`,
+    modelo, modelos:[modelo], labels:JC_LABELS, sections:[
+    ...mats,
+    ...data.map(([title, items]) => ({type:"checklist", title, opts:JC_ST, items, photos:[]})),
+    {type:"fields", title:"Encerramento", fields:[{id:"pecas",label:"Peças necessárias",area:true,ph:"Peças a solicitar ou que foram substituídas (opcional)"},{id:"pendencias",label:"Pendências",def:"N/A"},{id:"obsAd",label:"Comentários / ação necessária",area:true}]}]};
+}
+TEMPLATES.push(
+  jobcard("jc-rar", "RAR", JC_DATA.rar, ["Geral","Ferramentas especiais","RAPS","RAR"]),
+  jobcard("jc-sarx", "SARx", JC_DATA.sarx, ["Geral","SARx"]),
+  jobcard("jc-rgr", "RGR", JC_DATA.rgr, ["Geral"]));
+// Clientes Variados: os mesmos MTM e a Corretiva geral da Vale, sem o campo OM (é do Dynaway da Vale)
+TEMPLATES.push(...["mtm-doppler","mtm-sarx","mtm-series","corretiva"].map(id => ({...TEMPLATES.find(t => t.id === id), id:id+"-var", client:"variados", noOm:true})));
+const lab = (T, k, d) => (T.labels && T.labels[k]) || d;
 const YN_INV = {"Sim":"warn","Não":"ok"};  // em "manutenção adicional?" e "pendência?", Sim é o alerta
+/* Clientes: cada modelo pertence a um grupo. Os modelos de "Clientes Variados" entram aqui quando chegarem os checklists. */
+const CLIENTS = [
+  {id:"vale", name:"Vale", desc:"Modelos de padronização Dynaway: preventiva (MTM), inspeção e corretiva.",
+   intro:"Escolha o modelo, preencha em campo com fotos tiradas no próprio celular e gere o PDF pronto para anexar no Dynaway."},
+  {id:"variados", name:"Clientes Variados", desc:"Relatórios para outros clientes.",
+   intro:"Escolha o modelo, preencha em campo com fotos tiradas no próprio celular e gere o PDF do relatório."},
+  {id:"jobcards", name:"JobCard's", desc:"Checklists técnicos de MTM (RAR, SARx e RGR) com lista de materiais.",
+   intro:"Escolha o MTM, confira os materiais, marque cada atividade do checklist e gere o PDF do JobCard."},
+];
+TEMPLATES.forEach(t => t.client = t.client || "vale");
+const clientOf = id => CLIENTS.find(c => c.id === id) || CLIENTS[0];
+let CLIENT = "vale";
 const tplById = id => TEMPLATES.find(t => t.id === id);
 const norm = it => typeof it === "string" ? {t:it} : it;
 
@@ -353,6 +515,7 @@ const fmtDate = s => { if(!s) return ""; const [y,m,d] = s.split("-"); return d+
 const fmtDT = ts => new Date(ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
 const ICON = {
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
   gal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
@@ -422,7 +585,7 @@ async function unseal(box){
 }
 
 /* cada relatório guarda um resumo (para a lista) e o conteúdo completo, os dois cifrados */
-const metaOf = r => { const a = audit(r); return {templateId:r.templateId, status:r.status, om:r.header.om, tag:r.header.tag, updatedAt:r.updatedAt, pct:a.total ? Math.round(a.done/a.total*100) : 0}; };
+const metaOf = r => { const a = audit(r); return {templateId:r.templateId, client:r.client || "vale", status:r.status, om:r.header.om, tag:r.header.tag, updatedAt:r.updatedAt, pct:a.total ? Math.round(a.done/a.total*100) : 0}; };
 let saveChain = Promise.resolve();
 function dbPut(r){
   saveChain = saveChain.then(async () => {
@@ -496,7 +659,7 @@ let R = null;           // relatório aberto
 let saveTimer = null;
 function newReport(tid){
   const T = tplById(tid);
-  const r = {id:uid(), templateId:tid, createdAt:Date.now(), updatedAt:Date.now(), status:"rascunho",
+  const r = {id:uid(), templateId:tid, client:T.client, createdAt:Date.now(), updatedAt:Date.now(), status:"rascunho",
     header:{resp:settings.resp||"", om:"", local:"", data:today(), tag:"", modelo:T.modelo},
     team:[{nome:settings.resp||"", empresa:settings.empresa||"GPBR", inicio:"", fim:""}],
     answers:{}, extra:{}, acts:{}, texts:{}, chips:[], chipOutro:"", photos:{}, final:{}};
@@ -521,8 +684,8 @@ function audit(r){
   const T = tplById(r.templateId), miss = []; let total = 0, done = 0;
   const chk = (ok, label, anchor) => { total++; if(ok) done++; else miss.push({label, anchor}); };
   const h = r.header;
-  chk(h.resp, "Responsável técnico", "f-resp"); chk(h.om, "Número da OM", "f-om"); chk(h.local, "Localidade", "f-local");
-  chk(h.data, "Data de execução", "f-data"); chk(h.tag, "TAG do radar", "f-tag"); chk(h.modelo, "Modelo do radar", "f-modelo");
+  chk(h.resp, "Responsável técnico", "f-resp"); if(!T.noOm) chk(h.om, lab(T, "om", "Número da OM"), "f-om"); chk(h.local, lab(T, "local", "Localidade"), "f-local");
+  chk(h.data, "Data de execução", "f-data"); chk(h.tag, lab(T, "tag", "TAG do radar"), "f-tag"); chk(h.modelo, "Modelo do radar", "f-modelo");
   chk(r.team.some(m => m.nome && m.inicio && m.fim), "Equipe: nome e horários", "sec-team");
   T.sections.forEach((s, si) => {
     if(s.type==="checklist"){
@@ -533,7 +696,7 @@ function audit(r){
     if(s.type==="photos" && !s.optional) s.groups.forEach((g, gi) => { const k="s"+si+"g"+gi; chk((r.photos[k]||[]).length, s.title+": ao menos 1 foto", "pg-"+k); });
     if(s.type==="fields") s.fields.filter(f=>f.req).forEach(f => chk((r.texts[f.id]||"").trim(), s.title+": "+f.label, "f-"+f.id));
     if(s.type==="chips" && s.req) chk(r.chips.length, "Classe de falha", "sec-"+si);
-    if(s.type==="final"){ chk(r.final.omFin, "OM finalizada?", "fin-omFin"); chk(r.final.cond, "Condição geral do radar", "fin-cond"); chk(r.final.manut, "Manutenção adicional?", "fin-manut"); chk(r.final.pend, "Há pendência?", "fin-pend"); }
+    if(s.type==="final"){ if(!T.noOm) chk(r.final.omFin, "OM finalizada?", "fin-omFin"); chk(r.final.cond, "Condição geral do radar", "fin-cond"); chk(r.final.manut, "Manutenção adicional?", "fin-manut"); chk(r.final.pend, "Há pendência?", "fin-pend"); }
   });
   return {total, done, miss};
 }
@@ -548,7 +711,8 @@ function updateProgress(){
 function renderTop(mode){
   const tb = $("#topbar");
   if(mode==="home"){
-    tb.innerHTML = `<h1>Relatórios GPBR - VALE${TESTE_BADGE}<small>Inspeção · Preventiva · Corretiva</small></h1>
+    tb.innerHTML = `<button class="icon-btn" data-act="menu" aria-label="Escolher o cliente" aria-controls="drawer" type="button">${ICON.menu}</button>
+      <h1>Relatórios GPBR${TESTE_BADGE}<small>Cliente: ${esc(clientOf(CLIENT).name)}</small></h1>
       <button class="icon-btn" data-act="settings" aria-label="Ajustes" type="button">${ICON.gear}</button>`;
     $("#prog").hidden = true; $("#bar").hidden = true;
   } else {
@@ -569,21 +733,26 @@ function sectionsOf(T){
 /* ============ início ============ */
 async function renderHome(){
   R = null; renderTop("home");
-  const groups = [["Preventiva","Manutenção preventiva (MTM)"],["Inspeção","Inspeção"],["Corretiva","Manutenção corretiva"]];
-  const count = T => { let it=0, ph=0; T.sections.forEach(s => { if(s.type==="checklist"){ it+=s.items.length; ph+=s.photos.length; } if(s.type==="activities") it+=s.items.length; if(s.type==="photos" && !s.optional) ph+=s.groups.length; }); return [it, ph]; };
-  const card = T => { const [it, ph] = count(T); const meta = T.kind==="Corretiva" ? "Falha, ação, classe e evidências" : `${it} ${T.kind==="Inspeção"?"atividades":"itens"} · ${ph} ${ph>1?"grupos de fotos":"grupo de fotos"}`;
+  const groups = [["Preventiva","Manutenção preventiva (MTM)"],["Inspeção","Inspeção"],["Corretiva","Manutenção corretiva"],["JobCard","JobCard de MTM"]];
+  const count = T => { let it=0, ph=0, mt=0; T.sections.forEach(s => { if(s.type==="checklist"){ if(s.mat) mt+=s.items.length; else it+=s.items.length; ph+=s.photos.length; } if(s.type==="activities") it+=s.items.length; if(s.type==="photos" && !s.optional) ph+=s.groups.length; }); return [it, ph, mt]; };
+  const card = T => { const [it, ph, mt] = count(T); const meta = T.kind==="Corretiva" ? "Falha, ação, classe e evidências" : T.kind==="JobCard" ? `${it} atividades · ${mt} materiais` : `${it} ${T.kind==="Inspeção"?"atividades":"itens"} · ${ph} ${ph>1?"grupos de fotos":"grupo de fotos"}`;
     return `<button class="tpl" data-act="new" data-tid="${T.id}" type="button"><span class="tag">${esc(T.kind)}</span><b>${esc(T.name)}</b><span>${meta}</span></button>`; };
+  const C = clientOf(CLIENT), tpls = TEMPLATES.filter(t => t.client === CLIENT);
+  const models = tpls.length
+    ? groups.filter(([k]) => tpls.some(t => t.kind === k)).map(([k, lbl]) => `<h3 class="grp-t">${lbl}</h3><div class="tpl-grid">${tpls.filter(t=>t.kind===k).map(card).join("")}</div>`).join("")
+    : `<h3 class="grp-t">Modelos</h3><div class="empty">Ainda não há modelos de relatório para <b>${esc(C.name)}</b>. Os checklists deste grupo serão adicionados em breve.<div class="acts" style="margin-top:10px"><button class="btn sm" data-act="menu" type="button">Trocar de cliente</button></div></div>`;
   $("#view").innerHTML = `<div class="wrap">
-    <div class="intro"><h2>Qual relatório você vai fazer?</h2><p>Escolha o modelo, preencha em campo com fotos tiradas no próprio celular e gere o PDF pronto para anexar no Dynaway.</p></div>
+    <div class="intro"><button class="client-chip" data-act="menu" type="button">${ICON.menu}<span>Cliente: <b>${esc(C.name)}</b></span><span class="sw">trocar</span></button>
+      <h2>Qual relatório você vai fazer?</h2><p>${esc(C.intro)}</p></div>
     ${installHTML()}
-    ${groups.map(([k, lbl]) => `<h3 class="grp-t">${lbl}</h3><div class="tpl-grid">${TEMPLATES.filter(t=>t.kind===k).map(card).join("")}</div>`).join("")}
+    ${models}
     <div class="saved-h"><h3 class="grp-t">Relatórios neste aparelho</h3><span id="selTop"></span></div>
     <div class="saved" id="saved"><div class="empty">Carregando…</div></div>
     <div id="selBar"></div>
-    <footer class="credit">Relatórios GPBR - VALE · Desenvolvido por <b>Emerson Costa</b>${window.APP_VERSION ? ` · <button class="ver-link" data-act="news" type="button" aria-label="Ver novidades desta versão">${window.APP_VERSION}${IS_TESTE ? " (teste)" : ""}</button>` : ""}</footer>
+    <footer class="credit">Relatórios GPBR · Desenvolvido por <b>Emerson Costa</b>${window.APP_VERSION ? ` · <button class="ver-link" data-act="news" type="button" aria-label="Ver novidades desta versão">${window.APP_VERSION}${IS_TESTE ? " (teste)" : ""}</button>` : ""}</footer>
   </div>`;
   if(selMode) exitSelect(false, true);
-  savedList = (await dbList()).filter(m => m.broken || tplById(m.templateId));
+  savedList = (await dbList()).filter(m => m.broken || (m.client || "vale") === CLIENT).filter(m => m.broken || tplById(m.templateId));
   renderSaved();
 }
 
@@ -592,17 +761,17 @@ let savedList = [], selMode = false;
 const selIds = new Set();
 function renderSaved(){
   const el = $("#saved"); if(!el) return;
-  const list = savedList;
+  const list = savedList, C = clientOf(CLIENT);
   const del = id => `<button class="btn sm ghost danger" data-act="del" data-id="${id}" aria-label="Excluir" type="button">${ICON.x}</button>`;
   const info = m => { if(m.broken) return [`Relatório que não pôde ser aberto`, m.updatedAt ? fmtDT(m.updatedAt) : ""];
     const T = tplById(m.templateId);
     return [`${esc(T.name)}<span class="pill ${m.status==="finalizado"?"done":"draft"}">${m.status==="finalizado"?"PDF gerado":"Rascunho "+m.pct+"%"}</span>`,
-      `OM ${esc(m.om||"—")} · ${esc(m.tag||"sem TAG")} · ${fmtDT(m.updatedAt)}`]; };
+      `${T.noOm ? "" : `${T.labels ? "JIRA" : "OM"} ${esc(m.om||"—")} · `}${esc(m.tag||"sem TAG")} · ${fmtDT(m.updatedAt)}`]; };
   el.innerHTML = list.length ? list.map(m => { const [t, meta] = info(m);
     if(selMode){ const on = selIds.has(m.id);
       return `<button class="rep pick${on?" on":""}" data-act="pick" data-id="${m.id}" role="checkbox" aria-checked="${on}" type="button"><span class="box" aria-hidden="true">${on?ICON.check:""}</span><span class="t">${t}</span><span class="m">${meta}</span></button>`; }
     return `<div class="rep"><div class="t">${t}</div><div class="m">${meta}</div><div class="acts">${m.broken ? "" : `<button class="btn sm" data-act="open" data-id="${m.id}" type="button">Abrir</button>`}${del(m.id)}</div></div>`; }).join("")
-    : `<div class="empty">Nenhum relatório ainda. Os rascunhos ficam salvos automaticamente neste aparelho enquanto você preenche.</div>`;
+    : `<div class="empty">Nenhum relatório de ${esc(C.name)} ainda. Os rascunhos ficam salvos automaticamente neste aparelho enquanto você preenche.</div>`;
   $("#selTop").innerHTML = list.length > 1 && !selMode ? `<button class="btn sm ghost" data-act="selmode" type="button">${ICON.check} Selecionar</button>` : "";
   const n = selIds.size, all = n === list.length;
   $("#selBar").innerHTML = selMode ? `<div class="sel-bar" role="toolbar" aria-label="Relatórios selecionados">
@@ -621,6 +790,21 @@ async function deleteSelected(){
   exitSelect(false, true); await renderHome(); toast(n > 1 ? `${n} relatórios excluídos` : "Relatório excluído");
 }
 
+/* ============ painel lateral: cliente do relatório ============ */
+function renderDrawer(){
+  $("#clientList").innerHTML = CLIENTS.map(c => { const n = TEMPLATES.filter(t => t.client === c.id).length;
+    return `<button class="client-opt${c.id === CLIENT ? " on" : ""}" data-act="client" data-id="${c.id}" role="radio" aria-checked="${c.id === CLIENT}" type="button">
+      <span class="dot" aria-hidden="true"></span><span class="txt"><b>${esc(c.name)}</b><span>${esc(c.desc)}</span><small>${n ? n + (n > 1 ? " modelos" : " modelo") : "Modelos em breve"}</small></span></button>`; }).join("");
+}
+function openDrawer(){ navOpen("drawer"); renderDrawer(); $("#drawer").hidden = false; requestAnimationFrame(() => $("#drawer").classList.add("open")); setTimeout(() => { const on = document.querySelector(".client-opt.on"); if(on) on.focus(); }, 50); }
+function closeDrawer(fromBack){ if(fromBack !== true) navClose("drawer"); const d = $("#drawer"); d.classList.remove("open"); setTimeout(() => d.hidden = true, 220); }
+async function setClient(id){
+  if(!clientOf(id) || id === CLIENT){ closeDrawer(); return; }
+  CLIENT = id; await kvSet("client", id); closeDrawer(); await renderHome(); window.scrollTo(0,0); toast("Cliente: " + clientOf(id).name);
+}
+$("#drawer").addEventListener("click", e => { if(e.target.id === "drawer") closeDrawer(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
+
 /* ============ formulário ============ */
 function segHTML(path, opts, val, tones){
   const wide = opts.some(o => o.length > 11) && opts.length > 2;
@@ -629,15 +813,15 @@ function segHTML(path, opts, val, tones){
 }
 function itemHTML(k, n, it, extra){
   const a = R.answers[k] || {};
-  const need = a.status==="Reparar" || a.status==="Substituir";
-  const title = extra ? `<input type="text" data-bind="xlabel.${k}" value="${esc(extra.t)}" placeholder="Descreva o item de inspeção">` : `<span class="it">${esc(it.t)}</span>`;
+  const need = NEED.has(a.status);
+  const title = extra ? `<input type="text" data-bind="xlabel.${k}" value="${esc(extra.t)}" placeholder="Descreva o item">` : `<span class="it">${esc(it.t)}${it.cod?` <code class="cod">${esc(it.cod)}</code>`:""}</span>`;
   return `<div class="item" id="it-${k}">
     <div class="item-h"><span class="sn">${n}</span>${extra?`<span class="it">${title}</span><button class="btn sm ghost danger" data-act="delx" data-k="${k}" aria-label="Remover item" type="button">${ICON.x}</button>`:title}</div>
-    ${segHTML("answers."+k+".status", ST4, a.status)}
+    ${segHTML("answers."+k+".status", it.opts || ST4, a.status)}
     <div class="row-obs${it.unit?" read":""}">
-      ${it.unit?`<div class="reading"><input type="${it.unit==="ver."?"text":"number"}" inputmode="decimal" step="any" data-bind="answers.${k}.val" value="${esc(a.val)}" placeholder="Leitura" aria-label="Leitura"><span>${esc(it.unit)}</span></div>`:""}
-      <input type="text" class="obs${need && !a.obs?" need":""}" data-bind="answers.${k}.obs" value="${esc(a.obs)}" placeholder="${need?"Descreva o problema encontrado":"Observação (opcional)"}">
-    </div></div>`;
+      ${it.unit?`<div class="reading"><input type="${it.unit==="ver."?"text":"number"}" inputmode="decimal" step="any" data-bind="answers.${k}.val" value="${esc(a.val)}" placeholder="${esc(it.ph||"Leitura")}" aria-label="${esc(it.ph||"Leitura")}"><span>${esc(it.unit)}</span></div>`:""}
+      <input type="text" class="obs${need && !a.obs?" need":""}" data-bind="answers.${k}.obs" value="${esc(a.obs)}" placeholder="${need?needPh(a.status):"Observação (opcional)"}">
+    </div>${it.photo ? pgroupHTML(k+"p", "Foto: "+it.photo, false, true) : ""}</div>`;
 }
 function thumbHTML(gk, p, free){
   return `<div class="th"><div class="im"><img src="${p.data}" alt="${esc(p.caption||"Foto")}"><button class="del" data-act="delph" data-g="${gk}" data-p="${p.id}" aria-label="Excluir foto" type="button">${ICON.x}</button></div>
@@ -656,10 +840,10 @@ function refreshGroup(gk){ const el = document.getElementById("pg-"+gk); if(el) 
 function sectionHTML(s, si, numRef){
   const n = si+2; let body = "", cnt = "";
   if(s.type==="checklist"){
-    const items = s.items.map(norm).map((it, ii) => itemHTML("s"+si+"i"+ii, ++numRef.n, it)).join("");
-    const extras = (R.extra["s"+si]||[]).map(x => itemHTML(x.k, ++numRef.n, {t:x.t}, x)).join("");
+    const items = s.items.map(norm).map((it, ii) => itemHTML("s"+si+"i"+ii, ++numRef.n, {...it, opts:it.opts || s.opts})).join("");
+    const extras = (R.extra["s"+si]||[]).map(x => itemHTML(x.k, ++numRef.n, {t:x.t, opts:s.opts}, x)).join("");
     body = `<div class="items" id="items-${si}">${items}${extras}</div>
-      <button class="btn ghost" data-act="addx" data-s="${si}" type="button">${ICON.plus} Adicionar item</button>
+      <button class="btn ghost" data-act="addx" data-s="${si}" type="button">${ICON.plus} Adicionar ${s.mat?"material":"item"}</button>
       ${s.photos.length?`<div class="lbl">Registro fotográfico</div>${s.photos.map((g, gi) => pgroupHTML("s"+si+"g"+gi, g, false)).join("")}`:""}`;
     cnt = s.items.length+" itens";
   }
@@ -683,7 +867,7 @@ function sectionHTML(s, si, numRef){
   }
   if(s.type==="final"){
     const F = R.final;
-    body = `<div class="f" id="fin-omFin"><span class="lbl req">OM finalizada?</span>${segHTML("final.omFin", ["Sim","Não","N/D"], F.omFin)}<input type="text" data-bind="final.omFinObs" value="${esc(F.omFinObs)}" placeholder="Observação (opcional)"></div>
+    body = `${tplById(R.templateId).noOm ? "" : `<div class="f" id="fin-omFin"><span class="lbl req">OM finalizada?</span>${segHTML("final.omFin", ["Sim","Não","N/D"], F.omFin)}<input type="text" data-bind="final.omFinObs" value="${esc(F.omFinObs)}" placeholder="Observação (opcional)"></div>`}
       <div class="f" id="fin-cond"><span class="lbl req">Condição geral do radar</span>${segHTML("final.cond", ["Operante","Operante com restrição","Inoperante"], F.cond)}<input type="text" data-bind="final.condObs" value="${esc(F.condObs)}" placeholder="Observação (opcional)"></div>
       <div class="f" id="fin-manut"><span class="lbl req">Necessária alguma manutenção adicional?</span>${segHTML("final.manut", ["Sim","Não"], F.manut, YN_INV)}<input type="text" data-bind="final.manutQual" value="${esc(F.manutQual)}" placeholder="Se sim, qual?"></div>
       <div class="f" id="fin-pend"><span class="lbl req">Há alguma pendência?</span>${segHTML("final.pend", ["Sim","Não"], F.pend, YN_INV)}<input type="text" data-bind="final.pendQual" value="${esc(F.pendQual)}" placeholder="Se sim, qual?"></div>
@@ -705,10 +889,10 @@ function renderForm(){
     <section class="sec" id="sec-id"><h3>Identificação</h3><div class="sec-b">
       <div class="f" id="f-resp"><label class="req" for="in-resp">Responsável técnico</label><input type="text" id="in-resp" data-bind="header.resp" value="${esc(h.resp)}" placeholder="Nome e sobrenome" autocomplete="name"></div>
       <div class="grid2">
-        <div class="f" id="f-om"><label class="req" for="in-om">OM</label><input type="text" class="mono" id="in-om" data-bind="header.om" value="${esc(h.om)}" inputmode="numeric" placeholder="2026XXXXXXXXX"></div>
+        ${T.noOm ? "" : `<div class="f" id="f-om"><label class="req" for="in-om">${esc(lab(T, "om", "OM"))}</label><input type="text" class="mono" id="in-om" data-bind="header.om" value="${esc(h.om)}" ${T.labels ? 'autocapitalize="characters" placeholder="Ex.: MTM-1234"' : 'inputmode="numeric" placeholder="2026XXXXXXXXX"'}></div>`}
         <div class="f" id="f-data"><label class="req" for="in-data">Data de execução</label><input type="date" id="in-data" data-bind="header.data" value="${esc(h.data)}"></div>
-        <div class="f" id="f-local"><label class="req" for="in-local">Localidade</label><input type="text" id="in-local" data-bind="header.local" value="${esc(h.local)}" placeholder="Nome do site"></div>
-        <div class="f" id="f-tag"><label class="req" for="in-tag">TAG do radar</label><input type="text" class="mono" id="in-tag" data-bind="header.tag" value="${esc(h.tag)}" placeholder="Ex.: SSR123" autocapitalize="characters"></div>
+        <div class="f" id="f-local"><label class="req" for="in-local">${esc(lab(T, "local", "Localidade"))}</label><input type="text" id="in-local" data-bind="header.local" value="${esc(h.local)}" placeholder="Nome do site"></div>
+        <div class="f" id="f-tag"><label class="req" for="in-tag">${esc(lab(T, "tag", "TAG do radar"))}</label><input type="text" class="mono" id="in-tag" data-bind="header.tag" value="${esc(h.tag)}" placeholder="Ex.: SSR123" autocapitalize="characters"></div>
       </div>
       <div class="f" id="f-modelo"><label class="req" for="in-modelo">Modelo</label><input type="text" id="in-modelo" list="modelos" data-bind="header.modelo" value="${esc(h.modelo)}" placeholder="${esc(T.modelos.join(", "))}"><datalist id="modelos">${T.modelos.map(m=>`<option value="${esc(m)}">`).join("")}</datalist></div>
     </div></section>
@@ -732,8 +916,8 @@ document.addEventListener("click", async e => {
     setPath(R, path, cur === v ? "" : v);
     b.parentElement.querySelectorAll("button").forEach(x => { const on = x.dataset.v === getPath(R, path); x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
     const m = path.match(/^answers\.(\w+)\.status$/);
-    if(m){ const it = document.getElementById("it-"+m[1]); const obs = it && it.querySelector(".obs"); const st = getPath(R, path); const need = st==="Reparar"||st==="Substituir";
-      if(obs){ obs.placeholder = need ? "Descreva o problema encontrado" : "Observação (opcional)"; obs.classList.toggle("need", need && !obs.value); if(need) obs.focus({preventScroll:true}); } }
+    if(m){ const it = document.getElementById("it-"+m[1]); const obs = it && it.querySelector(".obs"); const st = getPath(R, path); const need = NEED.has(st);
+      if(obs){ obs.placeholder = need ? needPh(st) : "Observação (opcional)"; obs.classList.toggle("need", need && !obs.value); if(need) obs.focus({preventScroll:true}); } }
     touch(); return;
   }
   if(b.dataset.chip){
@@ -754,6 +938,9 @@ document.addEventListener("click", async e => {
   else if(act==="home") goHome();
   else if(act==="settings") openSettings();
   else if(act==="news") openNews(false);
+  else if(act==="menu") openDrawer();
+  else if(act==="drawer-close") closeDrawer();
+  else if(act==="client") setClient(b.dataset.id);
   else if(act==="install" && installEvt){ installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt = null; renderHome(); }
   else if(act==="addm"){ R.team.push({nome:"", empresa:settings.empresa||"GPBR", inicio:"", fim:""}); $("#team").innerHTML = teamHTML(); touch(); }
   else if(act==="delm"){ R.team.splice(+b.dataset.i,1); $("#team").innerHTML = teamHTML(); touch(); }
@@ -1058,11 +1245,17 @@ function buildPdf(r){
   };
 
   /* identificação */
-  table({ body:[
+  const tipo = T.kind==="Preventiva" ? "Manutenção preventiva (MTM)" : T.kind==="JobCard" ? "JobCard de MTM (preventiva)" : T.kind==="Inspeção" ? "Inspeção" : "Manutenção corretiva";
+  table({ body: T.noOm ? [
       [{content:"Responsável técnico", styles:LAB}, {content:h.resp||"", colSpan:3, styles:{fontStyle:"bold"}}],
-      [{content:"OM", styles:LAB}, h.om||"", {content:"Data de execução", styles:LAB}, fmtDate(h.data)],
-      [{content:"Localidade", styles:LAB}, h.local||"", {content:"TAG do radar", styles:LAB}, h.tag||""],
-      [{content:"Modelo", styles:LAB}, h.modelo||"", {content:"Tipo de atividade", styles:LAB}, T.kind==="Preventiva" ? "Manutenção preventiva (MTM)" : T.kind==="Inspeção" ? "Inspeção" : "Manutenção corretiva"],
+      [{content:"Data de execução", styles:LAB}, fmtDate(h.data), {content:"TAG do radar", styles:LAB}, h.tag||""],
+      [{content:"Localidade", styles:LAB}, h.local||"", {content:"Modelo", styles:LAB}, h.modelo||""],
+      [{content:"Tipo de atividade", styles:LAB}, {content:tipo, colSpan:3}],
+    ] : [
+      [{content:"Responsável técnico", styles:LAB}, {content:h.resp||"", colSpan:3, styles:{fontStyle:"bold"}}],
+      [{content:lab(T, "om", "OM"), styles:LAB}, h.om||"", {content:"Data de execução", styles:LAB}, fmtDate(h.data)],
+      [{content:lab(T, "local", "Localidade"), styles:LAB}, h.local||"", {content:lab(T, "tag", "TAG do radar"), styles:LAB}, h.tag||""],
+      [{content:"Modelo", styles:LAB}, h.modelo||"", {content:"Tipo de atividade", styles:LAB}, tipo],
     ], columnStyles:{0:{cellWidth:32}, 1:{cellWidth:59}, 2:{cellWidth:32}} });
 
   heading("Equipe de atendimento à demanda");
@@ -1071,10 +1264,19 @@ function buildPdf(r){
 
   T.sections.forEach((s, si) => {
     if(s.type==="checklist"){
-      const rows = s.items.map(norm).map((it, ii) => ({k:"s"+si+"i"+ii, t:it.t, unit:it.unit}))
+      const rows = s.items.map(norm).map((it, ii) => ({k:"s"+si+"i"+ii, t:it.t, unit:it.unit, cod:it.cod, ph:it.ph}))
         .concat((r.extra["s"+si]||[]).filter(x => x.t || r.answers[x.k]?.status).map(x => ({k:x.k, t:x.t||"Item adicional"})));
       const hasPhotos = s.photos.some((g, gi) => (r.photos["s"+si+"g"+gi]||[]).length);
       heading(s.title);
+      if(s.opts){
+        // JobCard: uma coluna de status (as atividades têm textos longos)
+        table({ head:[["Sn", s.mat ? "Material / peça" : "Atividade / critério de verificação", s.mat ? "Qtd. / observação" : "Comentários", "Status"]],
+          body: rows.map(x => { const a = r.answers[x.k] || {}; const read = x.unit && a.val ? `${(x.ph||"Leitura").replace(/\.$/, "")}: ${a.val} ${x.unit}` : "";
+            return [++itemN, x.t + (x.cod ? "\nCód. " + x.cod : ""), [read, a.obs].filter(Boolean).join("\n"), a.status ? {content:a.status, tone:TONE[a.status]||"na"} : {content:"Pendente", styles:{textColor:MUT, fontStyle:"italic"}}]; }),
+          columnStyles:{0:{cellWidth:9, halign:"center", textColor:MUT}, 1:{cellWidth:s.mat ? 78 : 100}, 3:{cellWidth:25, halign:"center", fontStyle:"bold"}},
+          didParseCell: d => { if(d.section==="head" && d.column.index===3) d.cell.styles.halign = "center"; toneCell(d, 3); } });
+        return;
+      }
       table({ head:[["Sn","Item de inspeção","Observação","Bom","Reparar","Substituir","N/D"]],
         body: rows.map(x => { const a = r.answers[x.k] || {}; const read = x.unit && a.val ? `Leitura: ${a.val} ${x.unit}` : "";
           return [++itemN, x.t, [read, a.obs].filter(Boolean).join("\n"), ...ST4.map(o => mark(a.status===o, TONE[o]))]; }),
@@ -1082,6 +1284,7 @@ function buildPdf(r){
         columnStyles:{0:{cellWidth:9, halign:"center", textColor:MUT}, 1:{cellWidth:64}, 3:{cellWidth:13.5, halign:"center", fontStyle:"bold"}, 4:{cellWidth:14.5, halign:"center", fontStyle:"bold"}, 5:{cellWidth:16.5, halign:"center", fontStyle:"bold"}, 6:{cellWidth:12, halign:"center", fontStyle:"bold"}},
         didParseCell: d => { if(d.section==="head" && d.column.index<3) d.cell.styles.halign = "left"; toneCell(d, 3); } });
       if(hasPhotos){ s.photos.forEach((g, gi) => photos(g, r.photos["s"+si+"g"+gi])); }
+      s.items.map(norm).forEach((it, ii) => { if(it.photo) photos(it.photo, r.photos["s"+si+"i"+ii+"p"]); });
     }
     if(s.type==="activities"){
       heading(s.title);
@@ -1111,7 +1314,7 @@ function buildPdf(r){
     if(s.type==="final"){
       const F = r.final;
       heading(s.title);
-      table({ head:[["Item de inspeção","Observação","Sim","Não","N/D"]],
+      if(!T.noOm) table({ head:[["Item de inspeção","Observação","Sim","Não","N/D"]],
         body:[["OM finalizada", F.omFinObs||"", mark(F.omFin==="Sim","ok"), mark(F.omFin==="Não","bad"), mark(F.omFin==="N/D","na")]],
         columnStyles:{0:{cellWidth:64}, 2:{cellWidth:14, halign:"center", fontStyle:"bold"}, 3:{cellWidth:14, halign:"center", fontStyle:"bold"}, 4:{cellWidth:14, halign:"center", fontStyle:"bold"}},
         didParseCell: d => { if(d.section==="head" && d.column.index>=2) d.cell.styles.halign = "center"; toneCell(d, 2); } });
@@ -1140,7 +1343,7 @@ function buildPdf(r){
     const tl = doc.splitTextToSize(T.title, CW - wl - wr - 6);
     doc.text(tl, cx, tl.length > 1 ? 12.5 : 14.5, {align:"center"});
     doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...MUT);
-    doc.text(`${T.name}  ·  OM ${h.om || "—"}  ·  ${fmtDate(h.data)}`, cx, tl.length > 1 ? 21.5 : 20.5, {align:"center"});
+    doc.text(`${T.name}  ·  ${T.noOm ? "" : `${T.labels ? "JIRA" : "OM"} ${h.om || "—"}  ·  `}${fmtDate(h.data)}`, cx, tl.length > 1 ? 21.5 : 20.5, {align:"center"});
     doc.setDrawColor(...ACC); doc.setLineWidth(0.9); doc.line(M, 25, W - M, 25);
     doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(M, H - 22, W - M, H - 22);
     doc.setFontSize(7.5); doc.setTextColor(...MUT);
@@ -1148,7 +1351,7 @@ function buildPdf(r){
     doc.text(`Página ${i} de ${n}`, W - M, H - 17.5, {align:"right"});
   }
   const clean = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w-]+/g,"_").replace(/^_+|_+$/g,"");
-  const filename = [T.short, clean(h.tag)||"semTAG", h.om ? "OM"+clean(h.om) : "", (h.data||today()).replace(/-/g,"")].filter(Boolean).join("_") + ".pdf";
+  const filename = [T.short, clean(h.tag)||"semTAG", h.om && !T.noOm ? (T.labels ? "JIRA-" : "OM")+clean(h.om) : "", (h.data||today()).replace(/-/g,"")].filter(Boolean).join("_") + ".pdf";
   return {blob: doc.output("blob"), pages: n, filename};
 }
 
@@ -1161,7 +1364,9 @@ function buildPdf(r){
   sp.addEventListener("click", hide);
   sp.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " ") hide(); });
   setTimeout(() => { timeUp = true; hide(); }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 1200 : 2200);
-  await keyReady; await loadSettings(); await renderHome();
+  await keyReady; await loadSettings();
+  try { const c = await kvGet("client"); if(c && CLIENTS.some(x => x.id === c)) CLIENT = c; } catch(e){}
+  await renderHome();
   ready = true; if(timeUp) hide();
 })();
 </script>
