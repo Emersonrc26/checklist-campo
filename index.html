@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v11"; window.APP_NEWS = [{"t":"Escolha do cliente","d":"No menu ☰, alterne entre Vale, Clientes Variados e JobCard\u0027s."},{"t":"Clientes Variados","d":"MTM Doppler, SARx, Series e Corretiva geral, sem o campo OM."},{"t":"JobCard\u0027s","d":"Checklists MTM RAR, SARx e RGR com lista de materiais, sem fotos."},{"t":"Foto do espaço em disco","d":"Na seção Software dos MTM, o item Verificar espaço em disco tem uma foto opcional."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v12"; window.APP_NEWS = [{"t":"Busca nos relatórios","d":"Com 5 relatórios ou mais, busque por TAG, OM ou localidade e filtre por rascunho, PDF gerado ou este mês."},{"t":"Tema claro para o sol","d":"Em Ajustes, escolha o tema da tela: Automático, Claro (sol) ou Escuro."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -82,6 +82,18 @@ main{padding-bottom:120px}
 .saved-h .grp-t{flex:1}
 .saved-h #selTop:empty{display:none}
 .saved-h #selTop .btn{margin-top:16px}
+/* busca e filtro dos relatórios salvos (aparece com 5 ou mais) */
+#savedTools:empty{display:none}
+#savedTools{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:0 6px 0 12px}
+.search:focus-within{border-color:var(--accent)}
+.search>svg{width:20px;height:20px;color:var(--muted);flex:none}
+.search input{flex:1;min-width:0;border:0;background:transparent;padding:12px 0;outline:0}
+.search input::-webkit-search-cancel-button{display:none}
+.search .clr{border:0;background:transparent;width:36px;height:36px;display:grid;place-items:center;color:var(--muted)}
+.search .clr svg{width:16px;height:16px}
+.found{font-size:13px;color:var(--muted)}
+.found:empty{display:none}
 .rep.pick{grid-template-columns:auto 1fr;text-align:left;width:100%;color:inherit;font:inherit;cursor:pointer}
 .rep.pick .box{grid-row:1/span 2;width:26px;height:26px;border-radius:7px;border:2px solid var(--muted);display:grid;place-items:center}
 .rep.pick .box svg{width:18px;height:18px}
@@ -138,7 +150,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
 .seg.wide{grid-template-columns:repeat(2,1fr)}
 .seg button{min-height:44px;border:1px solid var(--line);background:var(--sunk);border-radius:8px;font-weight:600;font-size:14.5px;padding:4px 6px;line-height:1.15}
 .seg button.on{color:#fff;border-color:transparent}
-.seg button.on.ok{background:var(--ok)} .seg button.on.warn{background:var(--warn)} .seg button.on.bad{background:var(--bad)} .seg button.on.na{background:var(--na)}
+.seg button.on.ok{background:var(--ok)} .seg button.on.warn{background:var(--warn)} .seg button.on.bad{background:var(--bad)} .seg button.on.na{background:var(--na)} .seg button.on.acc{background:var(--accent)}
 :root[data-theme="dark"] .seg button.on,:root:not([data-theme="light"]) .seg button.on{color:#fff}
 .row-obs{display:grid;grid-template-columns:1fr;gap:8px}
 .row-obs.read{grid-template-columns:130px 1fr}
@@ -522,6 +534,7 @@ const ICON = {
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
   pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
 };
 let toastT;
@@ -533,6 +546,15 @@ function busy(on, txt){ $("#busy").hidden=!on; if(txt) $("#busyTxt").textContent
    no próprio aparelho, não pode ser exportada e fica guardada só no IndexedDB do app. */
 // o app de teste usa outro banco: os dois ficam no mesmo endereço (emersonrc26.github.io) e não podem misturar dados
 const DB_NAME = (window.APP_CONFIG && window.APP_CONFIG.db) || "checklist-campo";
+/* tema da tela: "auto" segue o celular; o escolhido também fica no localStorage (não é dado sensível)
+   para valer já na abertura, antes de a chave e os ajustes cifrados carregarem */
+const THEME_KEY = DB_NAME + ".theme";
+const THEMES = [["auto","Automático"],["light","Claro (sol)"],["dark","Escuro"]];
+function applyTheme(t){
+  if(t === "light" || t === "dark") document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  try { if(t === "light" || t === "dark") localStorage.setItem(THEME_KEY, t); else localStorage.removeItem(THEME_KEY); } catch(e){}
+}
+try { const t = localStorage.getItem(THEME_KEY); if(t) document.documentElement.dataset.theme = t; } catch(e){}
 const mem = new Map(), memKv = new Map();   // usados quando o navegador não oferece IndexedDB
 let idb = null;
 const idbReady = new Promise(res => {
@@ -585,7 +607,7 @@ async function unseal(box){
 }
 
 /* cada relatório guarda um resumo (para a lista) e o conteúdo completo, os dois cifrados */
-const metaOf = r => { const a = audit(r); return {templateId:r.templateId, client:r.client || "vale", status:r.status, om:r.header.om, tag:r.header.tag, updatedAt:r.updatedAt, pct:a.total ? Math.round(a.done/a.total*100) : 0}; };
+const metaOf = r => { const a = audit(r); return {templateId:r.templateId, client:r.client || "vale", status:r.status, om:r.header.om, tag:r.header.tag, local:r.header.local, updatedAt:r.updatedAt, pct:a.total ? Math.round(a.done/a.total*100) : 0}; };
 let saveChain = Promise.resolve();
 function dbPut(r){
   saveChain = saveChain.then(async () => {
@@ -615,7 +637,7 @@ const dbDel = id => { mem.delete(id); return tx("reports", "readwrite", st => st
 async function wipeAll(){
   try { if(idb) idb.close(); } catch(e){}
   await new Promise(res => { try { const rq = indexedDB.deleteDatabase(DB_NAME); rq.onsuccess = rq.onerror = rq.onblocked = () => res(); } catch(e){ res(); } });
-  try { localStorage.removeItem(SKEY); } catch(e){}
+  try { localStorage.removeItem(SKEY); localStorage.removeItem(THEME_KEY); } catch(e){}
   mem.clear(); memKv.clear();
   location.reload();
 }
@@ -625,7 +647,7 @@ const DEFAULT_LOGOS = window.DEFAULT_LOGOS || null;   // definido por logos.js n
 // Logos do PDF: GroundProbe no cabeçalho; Orica Digital Solutions e a faixa de marcas no rodapé
 const LOGO_SLOTS = [["logoL","Cabeçalho, à esquerda"], ["logoF1","Rodapé, à esquerda"], ["logoF2","Rodapé, faixa de marcas"]];
 const LOGO_V = 2;   // aumente quando os logos padrão mudarem, para substituir os antigos nos aparelhos
-let settings = {resp:"", empresa:"GPBR", stamp:true, gallery:true, logoL:null, logoF1:null, logoF2:null};
+let settings = {resp:"", empresa:"GPBR", stamp:true, gallery:true, theme:"auto", logoL:null, logoF1:null, logoF2:null};
 function applyDefaultLogos(){ LOGO_SLOTS.forEach(([k]) => settings[k] = DEFAULT_LOGOS[k] || null); delete settings.logoR; settings.logoDefaults = LOGO_V; }
 async function loadSettings(){
   try { const box = await kvGet("settings"); if(box) Object.assign(settings, await unseal(box)); } catch(e){}
@@ -747,6 +769,7 @@ async function renderHome(){
     ${installHTML()}
     ${models}
     <div class="saved-h"><h3 class="grp-t">Relatórios neste aparelho</h3><span id="selTop"></span></div>
+    <div id="savedTools"></div>
     <div class="saved" id="saved"><div class="empty">Carregando…</div></div>
     <div id="selBar"></div>
     <footer class="credit">Relatórios GPBR · Desenvolvido por <b>Emerson Costa</b>${window.APP_VERSION ? ` · <button class="ver-link" data-act="news" type="button" aria-label="Ver novidades desta versão">${window.APP_VERSION}${IS_TESTE ? " (teste)" : ""}</button>` : ""}</footer>
@@ -759,9 +782,34 @@ async function renderHome(){
 /* ============ relatórios salvos: abrir, excluir um ou selecionar vários ============ */
 let savedList = [], selMode = false;
 const selIds = new Set();
+/* busca (TAG, OM, localidade ou modelo) e filtro rápido; aparecem quando há 5 relatórios ou mais */
+let savedQ = "", savedF = "all";
+const SAVED_F = [["all","Todos"],["draft","Rascunhos"],["done","PDF gerado"],["month","Este mês"]];
+const fold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function savedHit(m, f){
+  if(m.broken) return !savedQ && f === "all";
+  if(f === "draft" && m.status === "finalizado") return false;
+  if(f === "done" && m.status !== "finalizado") return false;
+  if(f === "month"){ const d = new Date(m.updatedAt), n = new Date(); if(d.getMonth() !== n.getMonth() || d.getFullYear() !== n.getFullYear()) return false; }
+  const T = tplById(m.templateId);
+  return !savedQ || fold([T.name, m.om, m.tag, m.local].join(" ")).includes(fold(savedQ));
+}
+function renderSavedTools(list){
+  const el = $("#savedTools"); if(!el) return;
+  if(savedList.length < 5 && !savedQ && savedF === "all"){ el.innerHTML = ""; return; }
+  if(!el.firstChild) el.innerHTML = `<div class="search">${ICON.search}<input type="search" id="savedQ" value="${esc(savedQ)}" placeholder="Buscar por TAG, OM ou localidade" aria-label="Buscar relatórios" enterkeyhint="search" autocomplete="off"><button class="clr" data-act="qclr" aria-label="Limpar busca" type="button">${ICON.x}</button></div>
+    <div class="chips" id="savedF" role="radiogroup" aria-label="Filtrar relatórios"></div><div class="found" id="savedN" aria-live="polite"></div>`;
+  $("#savedF").innerHTML = SAVED_F.map(([k, l]) => { const n = savedList.filter(m => savedHit(m, k)).length;
+    return `<button type="button" class="chip${savedF === k ? " on" : ""}" data-act="sfilt" data-f="${k}" role="radio" aria-checked="${savedF === k}">${l} (${n})</button>`; }).join("");
+  $(".search .clr").hidden = !savedQ;
+  $("#savedN").textContent = savedQ || savedF !== "all" ? `${list.length} de ${savedList.length} relatórios` : "";
+}
+function clearSavedFilter(){ savedQ = ""; savedF = "all"; const q = $("#savedQ"); if(q) q.value = ""; renderSaved(); }
 function renderSaved(){
   const el = $("#saved"); if(!el) return;
-  const list = savedList, C = clientOf(CLIENT);
+  const list = savedList.filter(m => savedHit(m, savedF)), C = clientOf(CLIENT);
+  if(selMode) [...selIds].forEach(id => { if(!list.some(m => m.id === id)) selIds.delete(id); });   // só fica marcado o que está à vista
+  renderSavedTools(list);
   const del = id => `<button class="btn sm ghost danger" data-act="del" data-id="${id}" aria-label="Excluir" type="button">${ICON.x}</button>`;
   const info = m => { if(m.broken) return [`Relatório que não pôde ser aberto`, m.updatedAt ? fmtDT(m.updatedAt) : ""];
     const T = tplById(m.templateId);
@@ -771,6 +819,7 @@ function renderSaved(){
     if(selMode){ const on = selIds.has(m.id);
       return `<button class="rep pick${on?" on":""}" data-act="pick" data-id="${m.id}" role="checkbox" aria-checked="${on}" type="button"><span class="box" aria-hidden="true">${on?ICON.check:""}</span><span class="t">${t}</span><span class="m">${meta}</span></button>`; }
     return `<div class="rep"><div class="t">${t}</div><div class="m">${meta}</div><div class="acts">${m.broken ? "" : `<button class="btn sm" data-act="open" data-id="${m.id}" type="button">Abrir</button>`}${del(m.id)}</div></div>`; }).join("")
+    : savedList.length ? `<div class="empty">Nenhum relatório encontrado${savedQ ? ` para "<b>${esc(savedQ)}</b>"` : ""}.<div class="acts" style="margin-top:10px"><button class="btn sm" data-act="qall" type="button">Limpar busca e filtro</button></div></div>`
     : `<div class="empty">Nenhum relatório de ${esc(C.name)} ainda. Os rascunhos ficam salvos automaticamente neste aparelho enquanto você preenche.</div>`;
   $("#selTop").innerHTML = list.length > 1 && !selMode ? `<button class="btn sm ghost" data-act="selmode" type="button">${ICON.check} Selecionar</button>` : "";
   const n = selIds.size, all = n === list.length;
@@ -800,7 +849,7 @@ function openDrawer(){ navOpen("drawer"); renderDrawer(); $("#drawer").hidden = 
 function closeDrawer(fromBack){ if(fromBack !== true) navClose("drawer"); const d = $("#drawer"); d.classList.remove("open"); setTimeout(() => d.hidden = true, 220); }
 async function setClient(id){
   if(!clientOf(id) || id === CLIENT){ closeDrawer(); return; }
-  CLIENT = id; await kvSet("client", id); closeDrawer(); await renderHome(); window.scrollTo(0,0); toast("Cliente: " + clientOf(id).name);
+  CLIENT = id; savedQ = ""; savedF = "all"; await kvSet("client", id); closeDrawer(); await renderHome(); window.scrollTo(0,0); toast("Cliente: " + clientOf(id).name);
 }
 $("#drawer").addEventListener("click", e => { if(e.target.id === "drawer") closeDrawer(); });
 document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
@@ -932,7 +981,10 @@ document.addEventListener("click", async e => {
   else if(act==="del"){ if(await confirmSheet("Excluir relatório?", "O rascunho e as fotos dele serão apagados deste aparelho.", "Excluir")){ await dbDel(b.dataset.id); renderHome(); toast("Relatório excluído"); } }
   else if(act==="selmode") enterSelect();
   else if(act==="pick"){ const id = b.dataset.id; if(selIds.has(id)) selIds.delete(id); else selIds.add(id); renderSaved(); }
-  else if(act==="selall"){ if(selIds.size === savedList.length) selIds.clear(); else savedList.forEach(m => selIds.add(m.id)); renderSaved(); }
+  else if(act==="selall"){ const vis = savedList.filter(m => savedHit(m, savedF)); if(selIds.size === vis.length) selIds.clear(); else vis.forEach(m => selIds.add(m.id)); renderSaved(); }
+  else if(act==="sfilt"){ savedF = b.dataset.f; renderSaved(); }
+  else if(act==="qclr"){ savedQ = ""; $("#savedQ").value = ""; renderSaved(); $("#savedQ").focus(); }
+  else if(act==="qall") clearSavedFilter();
   else if(act==="selcancel") exitSelect();
   else if(act==="seldel") deleteSelected();
   else if(act==="home") goHome();
@@ -959,6 +1011,7 @@ document.addEventListener("input", e => {
     if(t.classList.contains("obs")) t.classList.toggle("need", t.classList.contains("need") && !t.value);
     touch();
   }
+  if(t.id === "savedQ"){ savedQ = t.value.trim(); renderSaved(); }
   if(t.dataset.cap && R){ const [g, id] = t.dataset.cap.split("|"); const p = (R.photos[g]||[]).find(x => x.id===id); if(p){ p.caption = t.value; touch(); } }
 });
 document.addEventListener("change", e => {
@@ -1112,6 +1165,9 @@ function openSettings(){
   openSheet(`<h3>Ajustes</h3>
     <div class="f"><label for="st-resp">Responsável técnico padrão</label><input type="text" id="st-resp" value="${esc(settings.resp)}" placeholder="Preenche automaticamente novos relatórios"></div>
     <div class="f"><label for="st-emp">Empresa padrão da equipe</label><input type="text" id="st-emp" value="${esc(settings.empresa)}"></div>
+    <div class="f"><span class="lbl" id="st-theme-l">Tema da tela</span><div class="seg" style="--n:3" role="radiogroup" aria-labelledby="st-theme-l">${THEMES.map(([k, l]) =>
+      `<button type="button" role="radio" aria-checked="${settings.theme===k}" class="acc${settings.theme===k?" on":""}" data-theme-opt="${k}">${l}</button>`).join("")}</div>
+      <span style="font-size:13px;color:var(--muted)">Automático segue o celular. O claro é mais fácil de ler sob sol forte.</span></div>
     <label class="switch"><input type="checkbox" id="st-stamp" ${settings.stamp?"checked":""}> Carimbar data, hora e TAG nas fotos</label>
     <label class="switch"><input type="checkbox" id="st-gal" ${settings.gallery?"checked":""}> Salvar na galeria as fotos tiradas pelo app</label>
     <p style="font-size:14px">Logos impressos em todas as páginas do PDF:</p>
@@ -1128,7 +1184,9 @@ function openSettings(){
     if(await confirmSheet("Excluir todos os seus dados?", "Apaga deste aparelho todos os relatórios, fotos, ajustes e logos. PDFs já salvos ou compartilhados não são afetados. Não dá para desfazer.", "Excluir tudo")){ busy(true, "Excluindo dados…"); await wipeAll(); }
   };
   $("#sheet").onclick = e => {
-    const l = e.target.closest("[data-logo]"), u = e.target.closest("[data-unlogo]");
+    const l = e.target.closest("[data-logo]"), u = e.target.closest("[data-unlogo]"), th = e.target.closest("[data-theme-opt]");
+    if(th){ settings.theme = th.dataset.themeOpt; applyTheme(settings.theme); saveSettings();
+      th.parentElement.querySelectorAll("button").forEach(x => { const on = x === th; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); }
     if(e.target.closest("#stRestore")){ applyDefaultLogos(); saveSettings(); openSettings(); toast("Logos padrão restaurados"); }
     if(l){ logoTarget = l.dataset.logo; $("#logoIn").value = ""; $("#logoIn").click(); }
     if(u){ settings[u.dataset.unlogo] = null; saveSettings(); openSettings(); }
@@ -1364,7 +1422,7 @@ function buildPdf(r){
   sp.addEventListener("click", hide);
   sp.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " ") hide(); });
   setTimeout(() => { timeUp = true; hide(); }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 1200 : 2200);
-  await keyReady; await loadSettings();
+  await keyReady; await loadSettings(); applyTheme(settings.theme);
   try { const c = await kvGet("client"); if(c && CLIENTS.some(x => x.id === c)) CLIENT = c; } catch(e){}
   await renderHome();
   ready = true; if(timeUp) hide();
