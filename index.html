@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v12"; window.APP_NEWS = [{"t":"Busca nos relatórios","d":"Com 5 relatórios ou mais, busque por TAG, OM ou localidade e filtre por rascunho, PDF gerado ou este mês."},{"t":"Tema claro para o sol","d":"Em Ajustes, escolha o tema da tela: Automático, Claro (sol) ou Escuro."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v13"; window.APP_NEWS = [{"t":"Modelos em Clientes Variados","d":"O campo Modelo agora oferece SARx, Doppler, FX, XT, ETR e GNSS."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -500,7 +500,8 @@ TEMPLATES.push(
   jobcard("jc-sarx", "SARx", JC_DATA.sarx, ["Geral","SARx"]),
   jobcard("jc-rgr", "RGR", JC_DATA.rgr, ["Geral"]));
 // Clientes Variados: os mesmos MTM e a Corretiva geral da Vale, sem o campo OM (é do Dynaway da Vale)
-TEMPLATES.push(...["mtm-doppler","mtm-sarx","mtm-series","corretiva"].map(id => ({...TEMPLATES.find(t => t.id === id), id:id+"-var", client:"variados", noOm:true})));
+const MODELOS_VAR = ["SARx","Doppler","FX","XT","ETR","GNSS"];   // equipamentos atendidos em Clientes Variados
+TEMPLATES.push(...["mtm-doppler","mtm-sarx","mtm-series","corretiva"].map(id => ({...TEMPLATES.find(t => t.id === id), id:id+"-var", client:"variados", noOm:true, modelos:MODELOS_VAR})));
 const lab = (T, k, d) => (T.labels && T.labels[k]) || d;
 const YN_INV = {"Sim":"warn","Não":"ok"};  // em "manutenção adicional?" e "pendência?", Sim é o alerta
 /* Clientes: cada modelo pertence a um grupo. Os modelos de "Clientes Variados" entram aqui quando chegarem os checklists. */
