@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v13"; window.APP_NEWS = [{"t":"Modelos em Clientes Variados","d":"O campo Modelo agora oferece SARx, Doppler, FX, XT, ETR e GNSS."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v14"; window.APP_NEWS = [{"t":"Atividade de mais de um dia","d":"Na Identificação, preencha a Data de término: o PDF mostra o período, por exemplo 04/11 a 06/11."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -525,6 +525,9 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36);
 const today = () => { const d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const fmtDate = s => { if(!s) return ""; const [y,m,d] = s.split("-"); return d+"/"+m+"/"+y; };
+// atividade de mais de um dia: "04/11/2026 a 06/11/2026"; de um dia só, a data de início
+const multiDia = h => !!(h.dataFim && h.data && h.dataFim !== h.data);
+const fmtPeriodo = h => multiDia(h) ? fmtDate(h.data) + " a " + fmtDate(h.dataFim) : fmtDate(h.data);
 const fmtDT = ts => new Date(ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
 const ICON = {
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
@@ -708,7 +711,7 @@ function audit(r){
   const chk = (ok, label, anchor) => { total++; if(ok) done++; else miss.push({label, anchor}); };
   const h = r.header;
   chk(h.resp, "Responsável técnico", "f-resp"); if(!T.noOm) chk(h.om, lab(T, "om", "Número da OM"), "f-om"); chk(h.local, lab(T, "local", "Localidade"), "f-local");
-  chk(h.data, "Data de execução", "f-data"); chk(h.tag, lab(T, "tag", "TAG do radar"), "f-tag"); chk(h.modelo, "Modelo do radar", "f-modelo");
+  chk(h.data, "Data de início", "f-data"); if(h.dataFim) chk(h.dataFim >= h.data, "Data de término antes da data de início", "f-dataFim"); chk(h.tag, lab(T, "tag", "TAG do radar"), "f-tag"); chk(h.modelo, "Modelo do radar", "f-modelo");
   chk(r.team.some(m => m.nome && m.inicio && m.fim), "Equipe: nome e horários", "sec-team");
   T.sections.forEach((s, si) => {
     if(s.type==="checklist"){
@@ -940,7 +943,9 @@ function renderForm(){
       <div class="f" id="f-resp"><label class="req" for="in-resp">Responsável técnico</label><input type="text" id="in-resp" data-bind="header.resp" value="${esc(h.resp)}" placeholder="Nome e sobrenome" autocomplete="name"></div>
       <div class="grid2">
         ${T.noOm ? "" : `<div class="f" id="f-om"><label class="req" for="in-om">${esc(lab(T, "om", "OM"))}</label><input type="text" class="mono" id="in-om" data-bind="header.om" value="${esc(h.om)}" ${T.labels ? 'autocapitalize="characters" placeholder="Ex.: MTM-1234"' : 'inputmode="numeric" placeholder="2026XXXXXXXXX"'}></div>`}
-        <div class="f" id="f-data"><label class="req" for="in-data">Data de execução</label><input type="date" id="in-data" data-bind="header.data" value="${esc(h.data)}"></div>
+        <div class="f" id="f-data"><label class="req" for="in-data">Data de início</label><input type="date" id="in-data" data-bind="header.data" value="${esc(h.data)}"></div>
+        <div class="f" id="f-dataFim"><label for="in-dataFim">Data de término</label><input type="date" id="in-dataFim" data-bind="header.dataFim" value="${esc(h.dataFim)}" min="${esc(h.data)}" aria-describedby="hint-dataFim">
+          <span id="hint-dataFim" style="font-size:13px;color:var(--muted)">Só se a atividade passou de um dia.</span></div>
         <div class="f" id="f-local"><label class="req" for="in-local">${esc(lab(T, "local", "Localidade"))}</label><input type="text" id="in-local" data-bind="header.local" value="${esc(h.local)}" placeholder="Nome do site"></div>
         <div class="f" id="f-tag"><label class="req" for="in-tag">${esc(lab(T, "tag", "TAG do radar"))}</label><input type="text" class="mono" id="in-tag" data-bind="header.tag" value="${esc(h.tag)}" placeholder="Ex.: SSR123" autocapitalize="characters"></div>
       </div>
@@ -1013,6 +1018,7 @@ document.addEventListener("input", e => {
     touch();
   }
   if(t.id === "savedQ"){ savedQ = t.value.trim(); renderSaved(); }
+  if(t.id === "in-data" && $("#in-dataFim")) $("#in-dataFim").min = t.value;   // o calendário do término começa no dia de início
   if(t.dataset.cap && R){ const [g, id] = t.dataset.cap.split("|"); const p = (R.photos[g]||[]).find(x => x.id===id); if(p){ p.caption = t.value; touch(); } }
 });
 document.addEventListener("change", e => {
@@ -1307,12 +1313,12 @@ function buildPdf(r){
   const tipo = T.kind==="Preventiva" ? "Manutenção preventiva (MTM)" : T.kind==="JobCard" ? "JobCard de MTM (preventiva)" : T.kind==="Inspeção" ? "Inspeção" : "Manutenção corretiva";
   table({ body: T.noOm ? [
       [{content:"Responsável técnico", styles:LAB}, {content:h.resp||"", colSpan:3, styles:{fontStyle:"bold"}}],
-      [{content:"Data de execução", styles:LAB}, fmtDate(h.data), {content:"TAG do radar", styles:LAB}, h.tag||""],
+      [{content:multiDia(h) ? "Período de execução" : "Data de execução", styles:LAB}, fmtPeriodo(h), {content:"TAG do radar", styles:LAB}, h.tag||""],
       [{content:"Localidade", styles:LAB}, h.local||"", {content:"Modelo", styles:LAB}, h.modelo||""],
       [{content:"Tipo de atividade", styles:LAB}, {content:tipo, colSpan:3}],
     ] : [
       [{content:"Responsável técnico", styles:LAB}, {content:h.resp||"", colSpan:3, styles:{fontStyle:"bold"}}],
-      [{content:lab(T, "om", "OM"), styles:LAB}, h.om||"", {content:"Data de execução", styles:LAB}, fmtDate(h.data)],
+      [{content:lab(T, "om", "OM"), styles:LAB}, h.om||"", {content:multiDia(h) ? "Período de execução" : "Data de execução", styles:LAB}, fmtPeriodo(h)],
       [{content:lab(T, "local", "Localidade"), styles:LAB}, h.local||"", {content:lab(T, "tag", "TAG do radar"), styles:LAB}, h.tag||""],
       [{content:"Modelo", styles:LAB}, h.modelo||"", {content:"Tipo de atividade", styles:LAB}, tipo],
     ], columnStyles:{0:{cellWidth:32}, 1:{cellWidth:59}, 2:{cellWidth:32}} });
@@ -1402,7 +1408,7 @@ function buildPdf(r){
     const tl = doc.splitTextToSize(T.title, CW - wl - wr - 6);
     doc.text(tl, cx, tl.length > 1 ? 12.5 : 14.5, {align:"center"});
     doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...MUT);
-    doc.text(`${T.name}  ·  ${T.noOm ? "" : `${T.labels ? "JIRA" : "OM"} ${h.om || "—"}  ·  `}${fmtDate(h.data)}`, cx, tl.length > 1 ? 21.5 : 20.5, {align:"center"});
+    doc.text(`${T.name}  ·  ${T.noOm ? "" : `${T.labels ? "JIRA" : "OM"} ${h.om || "—"}  ·  `}${fmtPeriodo(h)}`, cx, tl.length > 1 ? 21.5 : 20.5, {align:"center"});
     doc.setDrawColor(...ACC); doc.setLineWidth(0.9); doc.line(M, 25, W - M, 25);
     doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(M, H - 22, W - M, H - 22);
     doc.setFontSize(7.5); doc.setTextColor(...MUT);
