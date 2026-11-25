@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v15"; window.APP_NEWS = [{"t":"Nova aba CRM","d":"No menu ☰, escolha CRM para preencher o Report diário de campo (Geomin • Vale)."},{"t":"Report diário","d":"Status do dia, horários, DDS, equipe, atividades, intercorrências, pendências, registros de segurança e fotos, com PDF."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v16"; window.APP_NEWS = [{"t":"Conta: celular e computador","d":"Entre com e-mail e senha para ver os mesmos relatórios em qualquer dispositivo."},{"t":"Relatórios antigos","d":"No primeiro login, o app oferece enviar para a conta os relatórios que já estão no aparelho."},{"t":"Histórico","d":"A cada 90 dias o histórico de relatórios é limpo."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -94,6 +94,15 @@ main{padding-bottom:120px}
 .search .clr svg{width:16px;height:16px}
 .found{font-size:13px;color:var(--muted)}
 .found:empty{display:none}
+/* conta: linha de sincronização na tela inicial */
+.sync-line{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px 8px 8px 12px;margin-top:18px}
+.sync-line>span{display:flex;align-items:center;gap:8px;min-width:0;overflow-wrap:anywhere}
+.sync-line svg{width:18px;height:18px;flex:none}
+.sync-line.err{border-color:var(--warn)}
+.sync-line .btn{flex:none}
+.lg-err{color:var(--bad);font-size:14px;margin:0}
+.lg-err:empty{display:none}
+.conta-box{border-top:0;padding-top:0;margin:0 0 6px}
 .rep.pick{grid-template-columns:auto 1fr;text-align:left;width:100%;color:inherit;font:inherit;cursor:pointer}
 .rep.pick .box{grid-row:1/span 2;width:26px;height:26px;border-radius:7px;border:2px solid var(--muted);display:grid;place-items:center}
 .rep.pick .box svg{width:18px;height:18px}
@@ -131,7 +140,7 @@ main{padding-bottom:120px}
 .f{display:flex;flex-direction:column;gap:5px;min-width:0}
 .f>label,.lbl{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .f .req::after,.lbl.req::after{content:" *";color:var(--accent)}
-input[type=text],input[type=date],input[type=time],input[type=number],textarea,select.inp{width:100%;min-height:46px;border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:10px 12px;font-size:16px}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=time],input[type=number],textarea,select.inp{width:100%;min-height:46px;border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:10px 12px;font-size:16px}
 textarea{min-height:92px;resize:vertical}
 input.mono{font-family:var(--mono)}
 input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
@@ -563,6 +572,7 @@ const ICON = {
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.4-9A6 6 0 0 1 18 8.5a4.5 4.5 0 0 1-.5 9.5H7z"/></svg>',
   search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
   pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
 };
@@ -663,12 +673,196 @@ async function dbGet(id){
   return rec.body ? unseal(rec.body) : rec;
 }
 const dbDel = id => { mem.delete(id); return tx("reports", "readwrite", st => st.delete(id), () => {}).catch(() => {}); };
+// exclusão feita pelo usuário: anota para a conta (e os outros aparelhos) excluírem também na próxima sincronização
+async function excluirRelatorios(ids){
+  const ap = (await kvGet("apagados")) || {};
+  for(const id of ids){ await dbDel(id); ap[id] = Date.now(); }
+  await kvSet("apagados", ap); syncLogo();
+}
 async function wipeAll(){
   try { if(idb) idb.close(); } catch(e){}
   await new Promise(res => { try { const rq = indexedDB.deleteDatabase(DB_NAME); rq.onsuccess = rq.onerror = rq.onblocked = () => res(); } catch(e){ res(); } });
   try { localStorage.removeItem(SKEY); localStorage.removeItem(THEME_KEY); } catch(e){}
   mem.clear(); memKv.clear();
   location.reload();
+}
+
+/* ============ conta e sincronização (Firebase) ============
+   Opcional: quem entra com e-mail e senha vê os mesmos relatórios no celular e no computador.
+   Usa as APIs REST do Firebase (Auth e Firestore), sem SDK. Em cada aparelho os relatórios continuam no
+   IndexedDB cifrado; na conta ficam usuarios/{uid}/relatorios_{variante} (o relatório em JSON, sem as fotos)
+   e usuarios/{uid}/fotos_{variante} (uma foto por documento, id "relatório__foto").
+   - syncAt é a hora do servidor de cada gravação: cada aparelho só busca o que mudou depois do último syncAt visto.
+   - Excluir vira uma "lápide" (deleted:true) para os outros aparelhos excluírem também.
+   - Histórico: o que está na conta há 90 dias sem mudança é apagado de lá (os aparelhos mantêm a cópia).
+   As regras do Firestore (firebase/firestore.rules) só deixam cada usuário ler e gravar dentro de usuarios/{uid}. */
+const FB = {key:"AIzaSyAMpKBHk2i2w69fU3pJilqmmOVckXDJbMo", project:"relatorios-gpbr",
+  auth:"https://identitytoolkit.googleapis.com/v1/accounts:", token:"https://securetoken.googleapis.com/v1/token",
+  fs:"https://firestore.googleapis.com/v1/projects/relatorios-gpbr/databases/(default)/documents"};
+const COL_R = "relatorios_" + (IS_TESTE ? "teste" : "oficial"), COL_F = "fotos_" + (IS_TESTE ? "teste" : "oficial");
+const HIST_DIAS = 90;
+let conta = null;                 // {uid, email, idToken, refresh, exp}
+let syncSt = {at:0, msg:"", err:false}, syncRun = null, syncTimer = null;
+const sv = v => ({stringValue:String(v)}), iv = v => ({integerValue:String(Math.round(v))}), bv = v => ({booleanValue:!!v});
+
+async function contaLoad(){ try { const b = await kvGet("conta"); conta = b ? await unseal(b) : null; } catch(e){ conta = null; } }
+async function contaSave(){ await kvSet("conta", conta ? await seal(conta) : null); }
+// estado da sincronização de cada conta neste aparelho: cursor (último syncAt visto), versão enviada de cada relatório,
+// fotos que já estão na conta e relatórios que o usuário preferiu manter só no aparelho
+async function stLoad(){ return (await kvGet("sync:" + conta.uid)) || {cursor:"", enviados:{}, fotos:[], soLocal:[], limpeza:0}; }
+const stSave = st => kvSet("sync:" + conta.uid, st);
+
+const AUTH_MSG = {EMAIL_EXISTS:"Já existe uma conta com este e-mail. Toque em Entrar.", EMAIL_NOT_FOUND:"E-mail ou senha incorretos.",
+  INVALID_PASSWORD:"E-mail ou senha incorretos.", INVALID_LOGIN_CREDENTIALS:"E-mail ou senha incorretos.", INVALID_EMAIL:"E-mail inválido.",
+  MISSING_PASSWORD:"Digite a senha.", WEAK_PASSWORD:"A senha precisa ter pelo menos 6 caracteres.", USER_DISABLED:"Esta conta foi desativada.",
+  TOO_MANY_ATTEMPTS_TRY_LATER:"Muitas tentativas. Espere alguns minutos e tente de novo."};
+async function fbAuth(op, body){
+  let r; try { r = await fetch(FB.auth + op + "?key=" + FB.key, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)}); }
+  catch(e){ throw new Error("Sem conexão com a internet. Tente de novo."); }
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok){ const code = String(j.error && j.error.message || "").split(/[ :]/)[0]; throw new Error(AUTH_MSG[code] || "Não foi possível concluir. Tente de novo."); }
+  return j;
+}
+async function entrar(email, senha, criar){
+  const j = await fbAuth(criar ? "signUp" : "signInWithPassword", {email, password:senha, returnSecureToken:true});
+  conta = {uid:j.localId, email:j.email, idToken:j.idToken, refresh:j.refreshToken, exp:Date.now() + (+j.expiresIn - 60)*1000};
+  await contaSave();
+}
+async function idToken(){
+  if(Date.now() < conta.exp) return conta.idToken;
+  const r = await fetch(FB.token + "?key=" + FB.key, {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:"grant_type=refresh_token&refresh_token=" + encodeURIComponent(conta.refresh)});
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok){ if(r.status === 400){ await sair(false); toast("Sua sessão expirou. Entre de novo para sincronizar."); } throw new Error("sessão"); }
+  Object.assign(conta, {idToken:j.id_token, refresh:j.refresh_token, exp:Date.now() + (+j.expires_in - 60)*1000});
+  await contaSave();
+  return conta.idToken;
+}
+async function fs(method, path, body){
+  const r = await fetch(FB.fs + "/usuarios/" + conta.uid + path, {method, headers:{Authorization:"Bearer " + await idToken(), "Content-Type":"application/json"}, body:body ? JSON.stringify(body) : undefined});
+  if(r.status === 404 && method !== "POST") return null;
+  if(!r.ok) throw new Error("Firestore " + r.status);
+  return method === "DELETE" ? null : r.json();
+}
+const docName = (col, id) => FB.fs.replace("https://firestore.googleapis.com/v1/", "") + "/usuarios/" + conta.uid + "/" + col + "/" + id;
+// grava com a hora do servidor em syncAt (é ela que os outros aparelhos usam para saber o que mudou)
+async function commit(writes){
+  const r = await fetch(FB.fs.replace(/\/documents$/, "/documents:commit"), {method:"POST", headers:{Authorization:"Bearer " + await idToken(), "Content-Type":"application/json"},
+    body:JSON.stringify({writes})});
+  if(!r.ok) throw new Error("Firestore " + r.status);
+}
+const up = (col, id, fields) => ({update:{name:docName(col, id), fields}, updateTransforms:[{fieldPath:"syncAt", setToServerValue:"REQUEST_TIME"}]});
+const del = (col, id) => ({delete:docName(col, id)});
+async function query(col, where, fields, porSyncAt){
+  const sq = {from:[{collectionId:col}], select:{fields:(fields.length ? fields : ["__name__"]).map(f => ({fieldPath:f}))}};   // só o nome, quando não precisa de campos
+  if(where) sq.where = where;
+  if(porSyncAt) sq.orderBy = [{field:{fieldPath:"syncAt"}, direction:"ASCENDING"}];
+  const res = await fs("POST", ":runQuery", {structuredQuery:sq});
+  return (res || []).filter(x => x.document).map(x => ({id:x.document.name.split("/").pop(), f:x.document.fields || {}}));
+}
+const gt = (field, op, value) => ({fieldFilter:{field:{fieldPath:field}, op, value}});
+
+// a foto vai num documento só dela (limite de ~1 MB por documento): se passar, reduz
+function fotoCabe(data){
+  if(data.length < 1000000) return Promise.resolve(data);
+  return new Promise(res => { const i = new Image(); i.onload = () => { const s = Math.min(1, 1200 / Math.max(i.width, i.height)), c = document.createElement("canvas");
+    c.width = Math.round(i.width*s); c.height = Math.round(i.height*s); c.getContext("2d").drawImage(i, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", 0.7)); }; i.onerror = () => res(""); i.src = data; });
+}
+const fotosDe = r => Object.values(r.photos || {}).flat();
+function semFotos(r){ const c = JSON.parse(JSON.stringify(r)); Object.values(c.photos || {}).forEach(l => l.forEach(p => p.data = "")); return c; }
+
+async function enviar(r, st){
+  const fotos = new Set(st.fotos), writes = [];
+  for(const p of fotosDe(r)){ const fid = r.id + "__" + p.id;
+    if(fotos.has(fid) || !p.data) continue;
+    await commit([up(COL_F, fid, {data:sv(await fotoCabe(p.data)), relatorio:sv(r.id)})]); fotos.add(fid); }
+  const atuais = new Set(fotosDe(r).map(p => r.id + "__" + p.id));
+  [...fotos].filter(fid => fid.startsWith(r.id + "__") && !atuais.has(fid)).forEach(fid => { writes.push(del(COL_F, fid)); fotos.delete(fid); });
+  writes.push(up(COL_R, r.id, {json:sv(JSON.stringify(semFotos(r))), updatedAt:iv(r.updatedAt), deleted:bv(false)}));
+  await commit(writes);
+  st.fotos = [...fotos]; st.enviados[r.id] = r.updatedAt;
+}
+async function receber(id, st){
+  const d = await fs("GET", "/" + COL_R + "/" + id); if(!d || !d.fields || !d.fields.json) return;
+  const r = JSON.parse(d.fields.json.stringValue), local = await dbGet(id).catch(() => null), fotos = new Set(st.fotos);
+  const tenho = {}; if(local) fotosDe(local).forEach(p => tenho[p.id] = p.data);
+  for(const p of fotosDe(r)){ p.data = tenho[p.id] || "";
+    if(!p.data){ const f = await fs("GET", "/" + COL_F + "/" + id + "__" + p.id); p.data = f && f.fields && f.fields.data ? f.fields.data.stringValue : ""; }
+    if(p.data) fotos.add(id + "__" + p.id); }
+  Object.keys(r.photos || {}).forEach(k => r.photos[k] = r.photos[k].filter(p => p.data));
+  await dbPut(r);
+  st.fotos = [...fotos]; st.enviados[id] = r.updatedAt;
+}
+// apaga da conta o que está lá há 90 dias sem mudança (uma vez por dia); os aparelhos ficam com a cópia
+async function limparHistorico(st){
+  if(Date.now() - (st.limpeza || 0) < 864e5) return;
+  const corte = {timestampValue:new Date(Date.now() - HIST_DIAS*864e5).toISOString()};
+  const velhos = await query(COL_R, gt("syncAt", "LESS_THAN", corte), ["updatedAt"]);
+  for(const v of velhos){
+    const fotos = await query(COL_F, gt("relatorio", "EQUAL", sv(v.id)), []);
+    await commit([del(COL_R, v.id), ...fotos.map(f => del(COL_F, f.id))]);
+    st.fotos = st.fotos.filter(fid => !fid.startsWith(v.id + "__"));
+  }
+  st.limpeza = Date.now();
+}
+function setSync(msg, err){ syncSt = {at:err ? syncSt.at : Date.now(), msg, err:!!err}; renderSyncLine(); }
+async function sync(){
+  if(!conta) return;
+  if(!navigator.onLine){ setSync("Sem internet: sincroniza quando a conexão voltar", true); return; }
+  if(syncRun) return syncRun;
+  syncRun = (async () => {
+    setSync("Sincronizando…");
+    try {
+      const st = await stLoad(); let mudou = false;
+      // 1) o que mudou na conta desde a última vez (outros aparelhos)
+      const novos = await query(COL_R, st.cursor ? gt("syncAt", "GREATER_THAN", {timestampValue:st.cursor}) : null, ["updatedAt", "deleted", "syncAt"], true);
+      const locais = new Map((await dbList()).filter(m => !m.broken).map(m => [m.id, m]));
+      for(const d of novos){
+        const at = +(d.f.updatedAt && d.f.updatedAt.integerValue || 0), apagado = !!(d.f.deleted && d.f.deleted.booleanValue), loc = locais.get(d.id);
+        if(R && R.id === d.id) break;   // relatório aberto agora: deixa para a próxima rodada (o cursor para aqui)
+        if(apagado){ if(loc && loc.updatedAt <= at){ await dbDel(d.id); mudou = true; } delete st.enviados[d.id]; }
+        else if(!loc || loc.updatedAt < at){ await receber(d.id, st); mudou = true; }
+        else st.enviados[d.id] = Math.max(st.enviados[d.id] || 0, at);
+        st.cursor = d.f.syncAt.timestampValue;
+      }
+      // 2) o que mudou neste aparelho e ainda não foi para a conta
+      const apagados = (await kvGet("apagados")) || {};
+      for(const [id, quando] of Object.entries(apagados)){
+        if(st.enviados[id] !== undefined || quando > (st.desde || 0)) await commit([up(COL_R, id, {json:sv(""), updatedAt:iv(quando), deleted:bv(true)})]);
+        delete st.enviados[id]; delete apagados[id];
+      }
+      await kvSet("apagados", apagados);
+      for(const m of (await dbList()).filter(m => !m.broken && !st.soLocal.includes(m.id) && (st.enviados[m.id] || 0) < m.updatedAt)){
+        if(R && R.id === m.id && $("#saveState").textContent !== "Salvo") continue;   // ainda salvando: vai na próxima
+        const r = await dbGet(m.id); if(r) await enviar(r, st);
+      }
+      await limparHistorico(st).catch(() => {});
+      await stSave(st);
+      setSync("Sincronizado");
+      if(mudou && !R && $("#saved") && !selMode) renderHome();
+    } catch(e){ setSync(navigator.onLine ? "Não foi possível sincronizar agora. Tenta de novo em instantes." : "Sem internet: sincroniza quando a conexão voltar", true); }
+    finally { syncRun = null; }
+  })();
+  return syncRun;
+}
+function syncLogo(){ if(!conta) return; clearTimeout(syncTimer); syncTimer = setTimeout(sync, 5000); }
+window.addEventListener("online", () => sync());
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") sync(); });
+setInterval(() => { if(document.visibilityState === "visible") sync(); }, 120000);
+async function sair(perguntar){
+  if(perguntar){ await sync().catch(() => {}); }
+  conta = null; await contaSave(); renderSyncLine();
+}
+// primeiro login neste aparelho: oferece levar para a conta os relatórios que já estavam aqui
+async function oferecerEnvio(){
+  const st = await stLoad();
+  const locais = (await dbList()).filter(m => !m.broken && st.enviados[m.id] === undefined && !st.soLocal.includes(m.id));
+  st.desde = st.desde || Date.now();
+  if(!locais.length){ await stSave(st); return true; }
+  const ok = await confirmSheet(`Enviar ${locais.length} ${locais.length > 1 ? "relatórios" : "relatório"} deste aparelho para a sua conta?`,
+    "Assim você vê esses relatórios também no computador ou em outro celular. Se preferir, eles ficam só neste aparelho.", "Enviar para a conta");
+  if(!ok) st.soLocal = [...new Set(st.soLocal.concat(locais.map(m => m.id)))];
+  await stSave(st);
+  return ok;
 }
 
 const SKEY = "checklist-campo.settings";   // versões antigas guardavam os ajustes aqui, sem criptografia
@@ -724,7 +918,7 @@ function touch(){
   R.updatedAt = Date.now();
   $("#saveState").textContent = "Salvando…";
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => { await dbPut(R); $("#saveState").textContent = "Salvo"; }, 500);
+  saveTimer = setTimeout(async () => { await dbPut(R); $("#saveState").textContent = "Salvo"; syncLogo(); }, 500);
   updateProgress();
 }
 function getPath(o, p){ return p.split(".").reduce((a,k) => a == null ? a : a[k], o); }
@@ -800,6 +994,7 @@ async function renderHome(){
       <h2>Qual relatório você vai fazer?</h2><p>${esc(C.intro)}</p></div>
     ${installHTML()}
     ${models}
+    <div class="sync-line" id="syncLine"></div>
     <div class="saved-h"><h3 class="grp-t">Relatórios neste aparelho</h3><span id="selTop"></span></div>
     <div id="savedTools"></div>
     <div class="saved" id="saved"><div class="empty">Carregando…</div></div>
@@ -808,7 +1003,7 @@ async function renderHome(){
   </div>`;
   if(selMode) exitSelect(false, true);
   savedList = (await dbList()).filter(m => m.broken || (m.client || "vale") === CLIENT).filter(m => m.broken || tplById(m.templateId));
-  renderSaved();
+  renderSaved(); renderSyncLine();
 }
 
 /* ============ relatórios salvos: abrir, excluir um ou selecionar vários ============ */
@@ -867,7 +1062,7 @@ async function deleteSelected(){
   const ids = [...selIds], n = ids.length; if(!n) return;
   if(!await confirmSheet(n > 1 ? `Excluir ${n} relatórios?` : "Excluir 1 relatório?", "Os rascunhos e as fotos deles serão apagados deste aparelho. Não dá para desfazer.", "Excluir")) return;
   busy(true, "Excluindo…");
-  try { for(const id of ids) await dbDel(id); } finally { busy(false); }
+  try { await excluirRelatorios(ids); } finally { busy(false); }
   exitSelect(false, true); await renderHome(); toast(n > 1 ? `${n} relatórios excluídos` : "Relatório excluído");
 }
 
@@ -1021,7 +1216,9 @@ document.addEventListener("click", async e => {
   const act = b.dataset.act;
   if(act==="new"){ R = newReport(b.dataset.tid); await dbPut(R); renderForm(); navOpen("form"); }
   else if(act==="open"){ let r = null; try { r = await dbGet(b.dataset.id); } catch(e){} if(r){ R = r; renderForm(); navOpen("form"); } else toast("Não foi possível abrir este relatório"); }
-  else if(act==="del"){ if(await confirmSheet("Excluir relatório?", "O rascunho e as fotos dele serão apagados deste aparelho.", "Excluir")){ await dbDel(b.dataset.id); renderHome(); toast("Relatório excluído"); } }
+  else if(act==="del"){ if(await confirmSheet("Excluir relatório?", conta ? "O rascunho e as fotos dele serão apagados deste aparelho e da sua conta." : "O rascunho e as fotos dele serão apagados deste aparelho.", "Excluir")){ await excluirRelatorios([b.dataset.id]); renderHome(); toast("Relatório excluído"); } }
+  else if(act==="login") openLogin();
+  else if(act==="sync") sync();
   else if(act==="selmode") enterSelect();
   else if(act==="pick"){ const id = b.dataset.id; if(selIds.has(id)) selIds.delete(id); else selIds.add(id); renderSaved(); }
   else if(act==="selall"){ const vis = savedList.filter(m => savedHit(m, savedF)); if(selIds.size === vis.length) selIds.clear(); else vis.forEach(m => selIds.add(m.id)); renderSaved(); }
@@ -1154,7 +1351,86 @@ $("#modal").addEventListener("click", e => { if(e.target.id==="modal" && !sheetL
 document.addEventListener("keydown", e => { if(e.key==="Escape" && !$("#modal").hidden && !sheetLocked) closeSheet(); });
 
 /* ============ privacidade (LGPD) ============ */
-const PRIVACY_V = 1;
+/* ============ conta: linha de status, entrar, sair ============ */
+function renderSyncLine(){
+  const el = $("#syncLine"); if(!el) return;
+  if(!conta){ el.className = "sync-line off";
+    el.innerHTML = `<span>${ICON.cloud}<span>Entre com sua conta para ver seus relatórios também no computador.</span></span><button class="btn sm" data-act="login" type="button">Entrar</button>`; return; }
+  const hora = syncSt.at ? new Date(syncSt.at).toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"}) : "";
+  el.className = "sync-line" + (syncSt.err ? " err" : "");
+  el.innerHTML = `<span>${ICON.cloud}<span>${esc(syncSt.msg === "Sincronizado" && hora ? "Sincronizado às " + hora : syncSt.msg || "Conectado")} · ${esc(conta.email)}</span></span><button class="btn sm ghost" data-act="sync" type="button">Sincronizar</button>`;
+}
+function openLogin(){
+  openSheet(`<h3>Entrar na sua conta</h3>
+    <p style="margin-top:0">Com uma conta, os seus relatórios ficam iguais no celular e no computador. Só você vê os seus relatórios.</p>
+    <div class="f"><label for="lg-email">E-mail</label><input type="email" id="lg-email" autocomplete="username" inputmode="email" autocapitalize="off"></div>
+    <div class="f"><label for="lg-senha">Senha</label><input type="password" id="lg-senha" autocomplete="current-password" placeholder="Mínimo de 6 caracteres"></div>
+    <label class="switch"><input type="checkbox" id="lg-aceite"> Estou ciente: a cada ${HIST_DIAS} dias o histórico de relatórios é limpo.</label>
+    <p class="lg-err" id="lg-err" role="alert"></p>
+    <div class="acts"><button class="btn" id="lg-criar" type="button">Criar conta</button><button class="btn pri" id="lg-entrar" type="button">Entrar</button></div>
+    <button class="btn ghost sm" id="lg-esqueci" type="button">Esqueci a senha</button>`);
+  const erro = m => { $("#lg-err").textContent = m || ""; };
+  const dados = () => ({email:$("#lg-email").value.trim(), senha:$("#lg-senha").value});
+  const vai = async criar => {
+    const {email, senha} = dados(); erro("");
+    if(!email || !senha) return erro("Preencha o e-mail e a senha.");
+    if(!$("#lg-aceite").checked) return erro(`Para continuar, marque que está ciente da limpeza do histórico a cada ${HIST_DIAS} dias.`);
+    busy(true, criar ? "Criando conta…" : "Entrando…");
+    try { await entrar(email, senha, criar); }
+    catch(e){ busy(false); return erro(e.message); }
+    busy(false); closeSheet(); await kvSet("aceiteHistorico", {dias:HIST_DIAS, at:Date.now()});
+    toast(criar ? "Conta criada" : "Conectado como " + conta.email);
+    await oferecerEnvio(); renderSyncLine();
+    busy(true, "Sincronizando seus relatórios…"); await sync(); busy(false);
+    if(!R) renderHome();
+  };
+  $("#lg-entrar").onclick = () => vai(false);
+  $("#lg-criar").onclick = () => vai(true);
+  $("#lg-esqueci").onclick = async () => {
+    const {email} = dados(); if(!email) return erro("Digite o seu e-mail acima e toque de novo em Esqueci a senha.");
+    try { await fbAuth("sendOobCode", {requestType:"PASSWORD_RESET", email}); erro(""); toast("Enviamos um e-mail para você criar uma senha nova"); }
+    catch(e){ erro(e.message); }
+  };
+}
+function openSair(){
+  openSheet(`<h3>Sair da conta?</h3>
+    <p>Os relatórios continuam na sua conta. Neste aparelho, você escolhe se eles ficam ou se são apagados (bom para computador compartilhado).</p>
+    <div class="acts" style="flex-direction:column;align-items:stretch">
+      <button class="btn pri" id="sa-manter" type="button">Sair e manter neste aparelho</button>
+      <button class="btn danger" id="sa-apagar" type="button">Sair e apagar deste aparelho</button>
+      <button class="btn ghost" id="sa-nao" type="button">Cancelar</button></div>`);
+  $("#sa-nao").onclick = () => closeSheet();
+  $("#sa-manter").onclick = async () => { closeSheet(); busy(true, "Saindo…"); await sair(true); busy(false); renderHome(); toast("Você saiu da conta"); };
+  $("#sa-apagar").onclick = async () => { closeSheet(); busy(true, "Saindo…"); await sair(true);
+    for(const m of await dbList()) await dbDel(m.id);
+    busy(false); renderHome(); toast("Você saiu da conta e os relatórios foram apagados deste aparelho"); };
+}
+// LGPD: apaga os relatórios e fotos da conta (app oficial e de teste) e a própria conta; os aparelhos ficam com a cópia deles
+async function excluirConta(){
+  if(!await confirmSheet("Excluir sua conta?", "Apaga a conta e todos os relatórios e fotos guardados nela. Os relatórios que estão neste aparelho continuam aqui. Não dá para desfazer.", "Excluir conta")) return;
+  busy(true, "Excluindo a conta…");
+  try {
+    for(const col of ["relatorios_oficial", "fotos_oficial", "relatorios_teste", "fotos_teste"]){
+      const docs = await query(col, null, []);
+      for(let i = 0; i < docs.length; i += 400) await commit(docs.slice(i, i + 400).map(d => del(col, d.id)));
+    }
+    await fbAuth("delete", {idToken:await idToken()});
+    conta = null; await contaSave(); busy(false); closeSheet(); renderHome(); toast("Conta excluída");
+  } catch(e){ busy(false); toast("Não foi possível excluir agora. Verifique a internet e tente de novo."); }
+}
+async function contaHTML(){
+  if(!conta) return `<div class="privbox conta-box"><b>Conta</b><span>Entre para ver os seus relatórios no celular e no computador.</span>
+    <div class="acts"><button class="btn sm pri" id="stLogin" type="button">Entrar ou criar conta</button></div></div>`;
+  const st = await stLoad();
+  return `<div class="privbox conta-box"><b>Conta</b><span>Conectado como <b>${esc(conta.email)}</b>.</span>
+    <span>A cada ${HIST_DIAS} dias o histórico de relatórios é limpo.</span>
+    <div class="acts"><button class="btn sm" id="stSync" type="button">Sincronizar agora</button>
+      ${st.soLocal.length ? `<button class="btn sm" id="stEnviar" type="button">Enviar relatórios deste aparelho</button>` : ""}
+      <button class="btn sm" id="stSair" type="button">Sair da conta</button>
+      <button class="btn sm danger" id="stDelConta" type="button">Excluir minha conta</button></div></div>`;
+}
+
+const PRIVACY_V = 2;
 async function openPrivacy(required){
   const ok = await kvGet("privacy");
   const where = KEY ? "Apenas neste aparelho, <b>criptografados (AES-256)</b>" : "Apenas neste aparelho (este navegador não oferece criptografia; use a versão instalada do app)";
@@ -1163,7 +1439,8 @@ async function openPrivacy(required){
     <dl class="priv">
       <dt>Quais dados</dt><dd>Nome do responsável técnico e dos executantes, horários de trabalho, número da OM, localidade, TAG do radar, respostas do checklist, observações e fotos (com data, hora e TAG carimbadas).</dd>
       <dt>Para quê</dt><dd>Somente para elaborar os relatórios de inspeção e manutenção dos equipamentos e anexá-los à OM.</dd>
-      <dt>Onde ficam</dt><dd>${where}. O app não tem servidor: nenhum relatório, nome ou foto é enviado pela internet. O PDF só sai do celular quando você toca em Compartilhar ou Salvar.</dd>
+      <dt>Onde ficam</dt><dd>${where}. Se você não entrar com uma conta, nenhum relatório, nome ou foto é enviado pela internet. O PDF só sai do celular quando você toca em Compartilhar ou Salvar.</dd>
+      <dt>Com uma conta</dt><dd>Se você entrar com e-mail e senha, consegue acessar a sua conta e ter acesso aos seus relatórios de qualquer dispositivo. A cada ${HIST_DIAS} dias o histórico de relatórios é limpo.</dd>
       <dt>O que não coletamos</dt><dd>Localização (GPS), contatos, identificadores do aparelho, dados de uso ou qualquer rastreamento.</dd>
       <dt>Fotos</dt><dd>Registre só o equipamento. Evite fotografar pessoas, rostos, placas de veículos e documentos.</dd>
       <dt>Por quanto tempo</dt><dd>Até você excluir. Depois de anexar o PDF no Dynaway, exclua o relatório do celular. Em Ajustes, "Excluir todos os meus dados" apaga tudo deste aparelho.</dd>
@@ -1203,10 +1480,12 @@ function confirmSheet(title, text, okLabel){
     $("#cNo").onclick = () => { closeSheet(); res(false); }; $("#cOk").onclick = () => { closeSheet(); res(true); };
   });
 }
-function openSettings(){
+async function openSettings(){
+  const contaBox = await contaHTML();
   const slot = (k, lbl) => `<div class="f"><span class="lbl">${lbl}</span><div class="logo-slot"><div class="pv">${settings[k]?`<img src="${settings[k].data}" alt="">`:"sem logo"}</div>
     <button class="btn sm" data-logo="${k}" type="button">Escolher imagem</button>${settings[k]?`<button class="btn sm ghost danger" data-unlogo="${k}" type="button">Remover</button>`:""}</div></div>`;
   openSheet(`<h3>Ajustes</h3>
+    ${contaBox}
     <div class="f"><label for="st-resp">Responsável técnico padrão</label><input type="text" id="st-resp" value="${esc(settings.resp)}" placeholder="Preenche automaticamente novos relatórios"></div>
     <div class="f"><label for="st-emp">Empresa padrão da equipe</label><input type="text" id="st-emp" value="${esc(settings.empresa)}"></div>
     <div class="f"><span class="lbl" id="st-theme-l">Tema da tela</span><div class="seg" style="--n:3" role="radiogroup" aria-labelledby="st-theme-l">${THEMES.map(([k, l]) =>
@@ -1224,6 +1503,12 @@ function openSettings(){
       <div class="acts"><button class="btn sm" id="stPriv" type="button">Aviso de privacidade (LGPD)</button><button class="btn sm danger" id="stWipe" type="button">Excluir todos os meus dados</button></div>
     </div>`);
   $("#stPriv").onclick = () => openPrivacy(false);
+  const on = (id, fn) => { const b = $(id); if(b) b.onclick = fn; };
+  on("#stLogin", () => { closeSheet(); openLogin(); });
+  on("#stSync", async () => { busy(true, "Sincronizando…"); await sync(); busy(false); toast(syncSt.msg); });
+  on("#stEnviar", async () => { const st = await stLoad(); st.soLocal = []; await stSave(st); closeSheet(); busy(true, "Enviando relatórios…"); await sync(); busy(false); toast(syncSt.msg); });
+  on("#stSair", () => openSair());
+  on("#stDelConta", () => excluirConta());
   $("#stWipe").onclick = async () => {
     if(await confirmSheet("Excluir todos os seus dados?", "Apaga deste aparelho todos os relatórios, fotos, ajustes e logos. PDFs já salvos ou compartilhados não são afetados. Não dá para desfazer.", "Excluir tudo")){ busy(true, "Excluindo dados…"); await wipeAll(); }
   };
@@ -1474,10 +1759,11 @@ function buildPdf(r){
   sp.addEventListener("click", hide);
   sp.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " ") hide(); });
   setTimeout(() => { timeUp = true; hide(); }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 1200 : 2200);
-  await keyReady; await loadSettings(); applyTheme(settings.theme);
+  await keyReady; await loadSettings(); applyTheme(settings.theme); await contaLoad();
   try { const c = await kvGet("client"); if(c && CLIENTS.some(x => x.id === c)) CLIENT = c; } catch(e){}
   await renderHome();
   ready = true; if(timeUp) hide();
+  if(conta) sync();
 })();
 </script>
 <script>
