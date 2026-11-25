@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v14"; window.APP_NEWS = [{"t":"Atividade de mais de um dia","d":"Na Identificação, preencha a Data de término: o PDF mostra o período, por exemplo 04/11 a 06/11."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v15"; window.APP_NEWS = [{"t":"Nova aba CRM","d":"No menu ☰, escolha CRM para preencher o Report diário de campo (Geomin • Vale)."},{"t":"Report diário","d":"Status do dia, horários, DDS, equipe, atividades, intercorrências, pendências, registros de segurança e fotos, com PDF."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -148,6 +148,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;
 .item-h input{font-weight:600}
 .seg{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:6px}
 .seg.wide{grid-template-columns:repeat(2,1fr)}
+.seg.stack{grid-template-columns:1fr}
 .seg button{min-height:44px;border:1px solid var(--line);background:var(--sunk);border-radius:8px;font-weight:600;font-size:14.5px;padding:4px 6px;line-height:1.15}
 .seg button.on{color:#fff;border-color:transparent}
 .seg button.on.ok{background:var(--ok)} .seg button.on.warn{background:var(--warn)} .seg button.on.bad{background:var(--bad)} .seg button.on.na{background:var(--na)} .seg button.on.acc{background:var(--accent)}
@@ -502,7 +503,29 @@ TEMPLATES.push(
 // Clientes Variados: os mesmos MTM e a Corretiva geral da Vale, sem o campo OM (é do Dynaway da Vale)
 const MODELOS_VAR = ["SARx","Doppler","FX","XT","ETR","GNSS"];   // equipamentos atendidos em Clientes Variados
 TEMPLATES.push(...["mtm-doppler","mtm-sarx","mtm-series","corretiva"].map(id => ({...TEMPLATES.find(t => t.id === id), id:id+"-var", client:"variados", noOm:true, modelos:MODELOS_VAR})));
+/* CRM: report diário de campo (Geomin • Vale). "diario" = cabeçalho só com responsável, data e estrutura; sem OM, TAG, modelo nem equipe.
+   Campos com when:[id, valor] só aparecem (e só são obrigatórios) quando a escolha id vale aquele valor. */
+const HOUVE = {"Não houve":"ok","Houve":"warn"};
+TEMPLATES.push({id:"crm-diario", kind:"Diário", client:"crm", name:"Report diário de campo", short:"Report_Diario", title:"REPORT DIÁRIO DE CAMPO | GEOMIN · VALE",
+  diario:true, noOm:true, modelo:"", modelos:[], labels:{resp:"Responsável pelo preenchimento", data:"Data", local:"Barragem / estrutura atendida"}, sections:[
+  {type:"fields", title:"Status do dia", fields:[
+    {id:"statusDia",label:"Status do dia",req:true,stack:true,choice:["Sem desvios","Com pontos de atenção","Com desvio/intercorrência relevante"],
+     tones:{"Sem desvios":"ok","Com pontos de atenção":"warn","Com desvio/intercorrência relevante":"bad"}}]},
+  {type:"fields", title:"Horários", fields:[{id:"chegada",label:"Chegada ao campo",time:true,req:true},{id:"saida",label:"Saída do campo",time:true,req:true}]},
+  {type:"fields", title:"Segurança e planejamento", fields:[{id:"dds",label:"Tema do DDS",req:true},{id:"boaJornada",label:"Boa Jornada",req:true}]},
+  {type:"fields", title:"Equipe em campo", fields:[{id:"qtdEquipe",label:"Quantidade de colaboradores",num:true,req:true},{id:"nomes",label:"Nomes",area:true,req:true,ph:"Um nome por linha"}]},
+  {type:"fields", title:"Atividades executadas", fields:[{id:"atividades",label:"Atividades",area:true,req:true,ph:"Uma atividade por linha"}]},
+  {type:"fields", title:"Intercorrências / desvios", fields:[{id:"interc",label:"Intercorrências",req:true,choice:["Não houve","Houve"],tones:HOUVE},
+    {id:"intercDesc",label:"Descrição da intercorrência",area:true,req:true,when:["interc","Houve"]}]},
+  {type:"fields", title:"Pendências das atividades", fields:[{id:"pend",label:"Pendências",req:true,choice:["Não houve","Houve"],tones:HOUVE},
+    {id:"pendDesc",label:"Descrição das pendências",area:true,req:true,when:["pend","Houve"]}]},
+  {type:"fields", title:"Registros de segurança", fields:[{id:"crms",label:"CRMs registrados",num:true,req:true},{id:"iris",label:"Inspeções realizadas no IRIS",num:true,req:true},{id:"n3",label:"N3 registrados no CRM/IRIS",num:true,req:true}]},
+  {type:"fields", title:"Pontos de atenção de segurança", fields:[{id:"pontos",label:"Pontos de atenção",req:true,choice:["Não identificados","Identificados"],tones:{"Não identificados":"ok","Identificados":"warn"}},
+    {id:"pontosDesc",label:"Pontos identificados",area:true,req:true,when:["pontos","Identificados"]}]},
+  {type:"fields", title:"Observações gerais", fields:[{id:"obsGerais",label:"Observações",area:true}]},
+  {type:"photos", title:"Registro fotográfico", optional:true, free:true, groups:["Atividades executadas","Condições encontradas","Pendências e pontos de atenção"]} ]});
 const lab = (T, k, d) => (T.labels && T.labels[k]) || d;
+const fieldOn = (f, r) => !f.when || r.texts[f.when[0]] === f.when[1];
 const YN_INV = {"Sim":"warn","Não":"ok"};  // em "manutenção adicional?" e "pendência?", Sim é o alerta
 /* Clientes: cada modelo pertence a um grupo. Os modelos de "Clientes Variados" entram aqui quando chegarem os checklists. */
 const CLIENTS = [
@@ -512,6 +535,8 @@ const CLIENTS = [
    intro:"Escolha o modelo, preencha em campo com fotos tiradas no próprio celular e gere o PDF do relatório."},
   {id:"jobcards", name:"JobCard's", desc:"Checklists técnicos de MTM (RAR, SARx e RGR) com lista de materiais.",
    intro:"Escolha o MTM, confira os materiais, marque cada atividade do checklist e gere o PDF do JobCard."},
+  {id:"crm", name:"CRM", desc:"Report diário de campo Geomin • Vale.",
+   intro:"Preencha o report do dia em campo, com fotos tiradas no próprio celular, e gere o PDF."},
 ];
 TEMPLATES.forEach(t => t.client = t.client || "vale");
 const clientOf = id => CLIENTS.find(c => c.id === id) || CLIENTS[0];
@@ -710,9 +735,12 @@ function audit(r){
   const T = tplById(r.templateId), miss = []; let total = 0, done = 0;
   const chk = (ok, label, anchor) => { total++; if(ok) done++; else miss.push({label, anchor}); };
   const h = r.header;
-  chk(h.resp, "Responsável técnico", "f-resp"); if(!T.noOm) chk(h.om, lab(T, "om", "Número da OM"), "f-om"); chk(h.local, lab(T, "local", "Localidade"), "f-local");
-  chk(h.data, "Data de início", "f-data"); if(h.dataFim) chk(h.dataFim >= h.data, "Data de término antes da data de início", "f-dataFim"); chk(h.tag, lab(T, "tag", "TAG do radar"), "f-tag"); chk(h.modelo, "Modelo do radar", "f-modelo");
-  chk(r.team.some(m => m.nome && m.inicio && m.fim), "Equipe: nome e horários", "sec-team");
+  chk(h.resp, lab(T, "resp", "Responsável técnico"), "f-resp"); if(!T.noOm) chk(h.om, lab(T, "om", "Número da OM"), "f-om"); chk(h.local, lab(T, "local", "Localidade"), "f-local");
+  chk(h.data, lab(T, "data", "Data de início"), "f-data");
+  if(!T.diario){
+    if(h.dataFim) chk(h.dataFim >= h.data, "Data de término antes da data de início", "f-dataFim"); chk(h.tag, lab(T, "tag", "TAG do radar"), "f-tag"); chk(h.modelo, "Modelo do radar", "f-modelo");
+    chk(r.team.some(m => m.nome && m.inicio && m.fim), "Equipe: nome e horários", "sec-team");
+  }
   T.sections.forEach((s, si) => {
     if(s.type==="checklist"){
       s.items.forEach((it, ii) => { const k="s"+si+"i"+ii; chk(r.answers[k]?.status, s.title+": "+norm(it).t, "it-"+k); });
@@ -720,7 +748,7 @@ function audit(r){
       s.photos.forEach((g, gi) => { const k="s"+si+"g"+gi; chk((r.photos[k]||[]).length, "Foto: "+g, "pg-"+k); });
     }
     if(s.type==="photos" && !s.optional) s.groups.forEach((g, gi) => { const k="s"+si+"g"+gi; chk((r.photos[k]||[]).length, s.title+": ao menos 1 foto", "pg-"+k); });
-    if(s.type==="fields") s.fields.filter(f=>f.req).forEach(f => chk((r.texts[f.id]||"").trim(), s.title+": "+f.label, "f-"+f.id));
+    if(s.type==="fields") s.fields.filter(f => f.req && fieldOn(f, r)).forEach(f => chk(String(r.texts[f.id] ?? "").trim(), s.title+": "+f.label, "f-"+f.id));
     if(s.type==="chips" && s.req) chk(r.chips.length, "Classe de falha", "sec-"+si);
     if(s.type==="final"){ if(!T.noOm) chk(r.final.omFin, "OM finalizada?", "fin-omFin"); chk(r.final.cond, "Condição geral do radar", "fin-cond"); chk(r.final.manut, "Manutenção adicional?", "fin-manut"); chk(r.final.pend, "Há pendência?", "fin-pend"); }
   });
@@ -751,17 +779,17 @@ function renderTop(mode){
   }
 }
 function sectionsOf(T){
-  const out = [{anchor:"sec-id", label:"Identificação"},{anchor:"sec-team", label:"1. Equipe"}];
-  T.sections.forEach((s, si) => out.push({anchor:"sec-"+si, label:(si+2)+". "+s.title}));
+  const out = [{anchor:"sec-id", label:"Identificação"}].concat(T.diario ? [] : [{anchor:"sec-team", label:"1. Equipe"}]);
+  T.sections.forEach((s, si) => out.push({anchor:"sec-"+si, label:(si+secOff(T))+". "+s.title}));
   return out;
 }
 
 /* ============ início ============ */
 async function renderHome(){
   R = null; renderTop("home");
-  const groups = [["Preventiva","Manutenção preventiva (MTM)"],["Inspeção","Inspeção"],["Corretiva","Manutenção corretiva"],["JobCard","JobCard de MTM"]];
+  const groups = [["Preventiva","Manutenção preventiva (MTM)"],["Inspeção","Inspeção"],["Corretiva","Manutenção corretiva"],["JobCard","JobCard de MTM"],["Diário","Report diário de campo"]];
   const count = T => { let it=0, ph=0, mt=0; T.sections.forEach(s => { if(s.type==="checklist"){ if(s.mat) mt+=s.items.length; else it+=s.items.length; ph+=s.photos.length; } if(s.type==="activities") it+=s.items.length; if(s.type==="photos" && !s.optional) ph+=s.groups.length; }); return [it, ph, mt]; };
-  const card = T => { const [it, ph, mt] = count(T); const meta = T.kind==="Corretiva" ? "Falha, ação, classe e evidências" : T.kind==="JobCard" ? `${it} atividades · ${mt} materiais` : `${it} ${T.kind==="Inspeção"?"atividades":"itens"} · ${ph} ${ph>1?"grupos de fotos":"grupo de fotos"}`;
+  const card = T => { const [it, ph, mt] = count(T); const meta = T.kind==="Corretiva" ? "Falha, ação, classe e evidências" : T.diario ? "Status, horários, segurança, atividades e fotos" : T.kind==="JobCard" ? `${it} atividades · ${mt} materiais` : `${it} ${T.kind==="Inspeção"?"atividades":"itens"} · ${ph} ${ph>1?"grupos de fotos":"grupo de fotos"}`;
     return `<button class="tpl" data-act="new" data-tid="${T.id}" type="button"><span class="tag">${esc(T.kind)}</span><b>${esc(T.name)}</b><span>${meta}</span></button>`; };
   const C = clientOf(CLIENT), tpls = TEMPLATES.filter(t => t.client === CLIENT);
   const models = tpls.length
@@ -818,7 +846,7 @@ function renderSaved(){
   const info = m => { if(m.broken) return [`Relatório que não pôde ser aberto`, m.updatedAt ? fmtDT(m.updatedAt) : ""];
     const T = tplById(m.templateId);
     return [`${esc(T.name)}<span class="pill ${m.status==="finalizado"?"done":"draft"}">${m.status==="finalizado"?"PDF gerado":"Rascunho "+m.pct+"%"}</span>`,
-      `${T.noOm ? "" : `${T.labels ? "JIRA" : "OM"} ${esc(m.om||"—")} · `}${esc(m.tag||"sem TAG")} · ${fmtDT(m.updatedAt)}`]; };
+      `${T.noOm ? "" : `${T.labels ? "JIRA" : "OM"} ${esc(m.om||"—")} · `}${T.diario ? esc(m.local||"sem estrutura") : esc(m.tag||"sem TAG")} · ${fmtDT(m.updatedAt)}`]; };
   el.innerHTML = list.length ? list.map(m => { const [t, meta] = info(m);
     if(selMode){ const on = selIds.has(m.id);
       return `<button class="rep pick${on?" on":""}" data-act="pick" data-id="${m.id}" role="checkbox" aria-checked="${on}" type="button"><span class="box" aria-hidden="true">${on?ICON.check:""}</span><span class="t">${t}</span><span class="m">${meta}</span></button>`; }
@@ -890,8 +918,9 @@ function pgroupHTML(gk, title, free, optional){
 }
 function refreshGroup(gk){ const el = document.getElementById("pg-"+gk); if(el) el.outerHTML = pgroupHTML(gk, el.querySelector(".pg-h span").textContent, !!el.dataset.free, !!el.dataset.opt); }
 
+const secOff = T => T.diario ? 1 : 2;   // a equipe é a seção 1, menos no report diário (que não tem)
 function sectionHTML(s, si, numRef){
-  const n = si+2; let body = "", cnt = "";
+  const n = si + secOff(tplById(R.templateId)); let body = "", cnt = "";
   if(s.type==="checklist"){
     const items = s.items.map(norm).map((it, ii) => itemHTML("s"+si+"i"+ii, ++numRef.n, {...it, opts:it.opts || s.opts})).join("");
     const extras = (R.extra["s"+si]||[]).map(x => itemHTML(x.k, ++numRef.n, {t:x.t, opts:s.opts}, x)).join("");
@@ -906,9 +935,11 @@ function sectionHTML(s, si, numRef){
     cnt = s.items.length+" atividades";
   }
   if(s.type==="fields"){
-    body = s.fields.map(f => `<div class="f" id="f-${f.id}"><label class="${f.req?"req":""}" for="in-${f.id}">${esc(f.label)}</label>${
-      f.choice ? segHTML("texts."+f.id, f.choice, R.texts[f.id]) :
+    body = s.fields.map(f => `<div class="f" id="f-${f.id}"${f.when ? ` data-when="${f.when[0]}" data-when-v="${esc(f.when[1])}"${fieldOn(f, R) ? "" : " hidden"}` : ""}><label class="${f.req?"req":""}" for="in-${f.id}">${esc(f.label)}</label>${
+      f.choice ? segHTML("texts."+f.id, f.choice, R.texts[f.id], f.tones).replace('class="seg', f.stack ? 'class="seg stack' : 'class="seg') :
       f.area ? `<textarea id="in-${f.id}" data-bind="texts.${f.id}" placeholder="${esc(f.ph||"")}">${esc(R.texts[f.id])}</textarea>` :
+      f.time ? `<input type="time" id="in-${f.id}" data-bind="texts.${f.id}" value="${esc(R.texts[f.id])}">` :
+      f.num ? `<input type="number" id="in-${f.id}" data-bind="texts.${f.id}" value="${esc(R.texts[f.id])}" inputmode="numeric" min="0" step="1" placeholder="0">` :
       `<input type="text" id="in-${f.id}" data-bind="texts.${f.id}" value="${esc(R.texts[f.id])}" placeholder="${esc(f.ph||"")}">`}</div>`).join("");
   }
   if(s.type==="chips"){
@@ -940,8 +971,12 @@ function renderForm(){
   const h = R.header, numRef = {n:0};
   $("#view").innerHTML = `<div class="wrap">
     <section class="sec" id="sec-id"><h3>Identificação</h3><div class="sec-b">
-      <div class="f" id="f-resp"><label class="req" for="in-resp">Responsável técnico</label><input type="text" id="in-resp" data-bind="header.resp" value="${esc(h.resp)}" placeholder="Nome e sobrenome" autocomplete="name"></div>
-      <div class="grid2">
+      <div class="f" id="f-resp"><label class="req" for="in-resp">${esc(lab(T, "resp", "Responsável técnico"))}</label><input type="text" id="in-resp" data-bind="header.resp" value="${esc(h.resp)}" placeholder="Nome e sobrenome" autocomplete="name"></div>
+      ${T.diario ? `<div class="grid2">
+        <div class="f" id="f-data"><label class="req" for="in-data">${esc(lab(T, "data", "Data"))}</label><input type="date" id="in-data" data-bind="header.data" value="${esc(h.data)}"></div>
+        <div class="f" id="f-local"><label class="req" for="in-local">${esc(lab(T, "local", "Localidade"))}</label><input type="text" id="in-local" data-bind="header.local" value="${esc(h.local)}" placeholder="Nome da barragem ou estrutura"></div>
+      </div>
+    </div></section>` : `<div class="grid2">
         ${T.noOm ? "" : `<div class="f" id="f-om"><label class="req" for="in-om">${esc(lab(T, "om", "OM"))}</label><input type="text" class="mono" id="in-om" data-bind="header.om" value="${esc(h.om)}" ${T.labels ? 'autocapitalize="characters" placeholder="Ex.: MTM-1234"' : 'inputmode="numeric" placeholder="2026XXXXXXXXX"'}></div>`}
         <div class="f" id="f-data"><label class="req" for="in-data">Data de início</label><input type="date" id="in-data" data-bind="header.data" value="${esc(h.data)}"></div>
         <div class="f" id="f-dataFim"><label for="in-dataFim">Data de término</label><input type="date" id="in-dataFim" data-bind="header.dataFim" value="${esc(h.dataFim)}" min="${esc(h.data)}" aria-describedby="hint-dataFim">
@@ -954,7 +989,7 @@ function renderForm(){
     <section class="sec" id="sec-team"><h3><span class="n">1.</span>Equipe de atendimento à demanda</h3><div class="sec-b">
       <div id="team" style="display:flex;flex-direction:column;gap:10px">${teamHTML()}</div>
       <button class="btn ghost" data-act="addm" type="button">${ICON.plus} Adicionar executante</button>
-    </div></section>
+    </div></section>`}
     ${T.sections.map((s, si) => sectionHTML(s, si, numRef)).join("")}
   </div>`;
   $("#saveState").textContent = "Salvo";
@@ -970,6 +1005,8 @@ document.addEventListener("click", async e => {
     const path = b.dataset.seg, v = b.dataset.v, cur = getPath(R, path);
     setPath(R, path, cur === v ? "" : v);
     b.parentElement.querySelectorAll("button").forEach(x => { const on = x.dataset.v === getPath(R, path); x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
+    const tx = path.match(/^texts\.(\w+)$/);   // mostra a descrição que depende desta escolha (ex.: "Houve" → descreva)
+    if(tx) document.querySelectorAll(`[data-when="${tx[1]}"]`).forEach(el => { el.hidden = getPath(R, path) !== el.dataset.whenV; if(!el.hidden) el.querySelector("textarea, input")?.focus({preventScroll:true}); });
     const m = path.match(/^answers\.(\w+)\.status$/);
     if(m){ const it = document.getElementById("it-"+m[1]); const obs = it && it.querySelector(".obs"); const st = getPath(R, path); const need = NEED.has(st);
       if(obs){ obs.placeholder = need ? needPh(st) : "Observação (opcional)"; obs.classList.toggle("need", need && !obs.value); if(need) obs.focus({preventScroll:true}); } }
@@ -1311,7 +1348,12 @@ function buildPdf(r){
 
   /* identificação */
   const tipo = T.kind==="Preventiva" ? "Manutenção preventiva (MTM)" : T.kind==="JobCard" ? "JobCard de MTM (preventiva)" : T.kind==="Inspeção" ? "Inspeção" : "Manutenção corretiva";
-  table({ body: T.noOm ? [
+  if(T.diario) table({ body:[
+      [{content:lab(T, "resp", "Responsável"), styles:LAB}, {content:h.resp||"", colSpan:3, styles:{fontStyle:"bold"}}],
+      [{content:lab(T, "data", "Data"), styles:LAB}, fmtDate(h.data), {content:"Atividade", styles:LAB}, T.name],
+      [{content:lab(T, "local", "Estrutura"), styles:LAB}, {content:h.local||"", colSpan:3}],
+    ], columnStyles:{0:{cellWidth:32}, 1:{cellWidth:59}, 2:{cellWidth:32}} });
+  else table({ body: T.noOm ? [
       [{content:"Responsável técnico", styles:LAB}, {content:h.resp||"", colSpan:3, styles:{fontStyle:"bold"}}],
       [{content:multiDia(h) ? "Período de execução" : "Data de execução", styles:LAB}, fmtPeriodo(h), {content:"TAG do radar", styles:LAB}, h.tag||""],
       [{content:"Localidade", styles:LAB}, h.local||"", {content:"Modelo", styles:LAB}, h.modelo||""],
@@ -1323,9 +1365,9 @@ function buildPdf(r){
       [{content:"Modelo", styles:LAB}, h.modelo||"", {content:"Tipo de atividade", styles:LAB}, tipo],
     ], columnStyles:{0:{cellWidth:32}, 1:{cellWidth:59}, 2:{cellWidth:32}} });
 
-  heading("Equipe de atendimento à demanda");
+  if(!T.diario){ heading("Equipe de atendimento à demanda");
   table({ head:[["Executante","Empresa","Horário de início","Horário de fim"]], body:(r.team.filter(m => m.nome || m.inicio).map(m => [m.nome, m.empresa, m.inicio, m.fim]).concat([["","","",""]])).slice(0, Math.max(1, r.team.filter(m => m.nome || m.inicio).length)),
-    columnStyles:{1:{cellWidth:32}, 2:{cellWidth:32, halign:"center"}, 3:{cellWidth:32, halign:"center"}} });
+    columnStyles:{1:{cellWidth:32}, 2:{cellWidth:32, halign:"center"}, 3:{cellWidth:32, halign:"center"}} }); }
 
   T.sections.forEach((s, si) => {
     if(s.type==="checklist"){
@@ -1361,7 +1403,10 @@ function buildPdf(r){
     }
     if(s.type==="fields"){
       heading(s.title);
-      table({ body: s.fields.map(f => [{content:f.label, styles:LAB}, r.texts[f.id] || ""]), columnStyles:{0:{cellWidth:42}}, styles:{fontSize:9, valign:"top", minCellHeight:9} });
+      // escolha colorida (status, houve/não houve); a descrição condicional só entra quando se aplica
+      table({ body: s.fields.filter(f => fieldOn(f, r)).map(f => { const v = r.texts[f.id] ?? "";
+          return [{content:f.label, styles:LAB}, f.choice && v ? {content:v, tone:(f.tones||TONE)[v]||"na", styles:{fontStyle:"bold"}} : String(v)]; }),
+        columnStyles:{0:{cellWidth:42}}, styles:{fontSize:9, valign:"top", minCellHeight:9}, didParseCell: d => toneCell(d, 1) });
     }
     if(s.type==="chips"){
       heading(s.title);
@@ -1412,11 +1457,11 @@ function buildPdf(r){
     doc.setDrawColor(...ACC); doc.setLineWidth(0.9); doc.line(M, 25, W - M, 25);
     doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(M, H - 22, W - M, H - 22);
     doc.setFontSize(7.5); doc.setTextColor(...MUT);
-    doc.text(`TAG ${h.tag || "—"}  ·  ${h.local || ""}  ·  Responsável: ${h.resp || "—"}`, M, H - 17.5);
+    doc.text(T.diario ? `Estrutura: ${h.local || "—"}  ·  Responsável: ${h.resp || "—"}` : `TAG ${h.tag || "—"}  ·  ${h.local || ""}  ·  Responsável: ${h.resp || "—"}`, M, H - 17.5);
     doc.text(`Página ${i} de ${n}`, W - M, H - 17.5, {align:"right"});
   }
   const clean = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w-]+/g,"_").replace(/^_+|_+$/g,"");
-  const filename = [T.short, clean(h.tag)||"semTAG", h.om && !T.noOm ? (T.labels ? "JIRA-" : "OM")+clean(h.om) : "", (h.data||today()).replace(/-/g,"")].filter(Boolean).join("_") + ".pdf";
+  const filename = [T.short, T.diario ? clean(h.local) : clean(h.tag)||"semTAG", h.om && !T.noOm ? (T.labels ? "JIRA-" : "OM")+clean(h.om) : "", (h.data||today()).replace(/-/g,"")].filter(Boolean).join("_") + ".pdf";
   return {blob: doc.output("blob"), pages: n, filename};
 }
 
