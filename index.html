@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v17"; window.APP_NEWS = [{"t":"Relatórios sobem sozinhos","d":"Ao entrar na conta, todos os relatórios do aparelho vão para a conta automaticamente."},{"t":"Sair com segurança","d":"Ao sair e apagar, o app só apaga do aparelho o que já está salvo na conta."},{"t":"Esqueci a senha","d":"O link do e-mail abre o app com uma janela para criar a senha nova."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v18"; window.APP_NEWS = [{"t":"Esqueci a senha","d":"Para alterar a senha, entre em contato com o desenvolvedor do app."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -102,6 +102,8 @@ main{padding-bottom:120px}
 .sync-line .btn{flex:none}
 .lg-err{color:var(--bad);font-size:14px;margin:0}
 .lg-err:empty{display:none}
+.lg-info{font-size:14px;margin:0;padding:10px 12px;border-radius:8px;background:var(--accent-soft)}
+.lg-info:empty{display:none}
 .conta-box{border-top:0;padding-top:0;margin:0 0 6px}
 .rep.pick{grid-template-columns:auto 1fr;text-align:left;width:100%;color:inherit;font:inherit;cursor:pointer}
 .rep.pick .box{grid-row:1/span 2;width:26px;height:26px;border-radius:7px;border:2px solid var(--muted);display:grid;place-items:center}
@@ -716,8 +718,8 @@ const AUTH_MSG = {EMAIL_EXISTS:"Já existe uma conta com este e-mail. Toque em E
   INVALID_PASSWORD:"E-mail ou senha incorretos.", INVALID_LOGIN_CREDENTIALS:"E-mail ou senha incorretos.", INVALID_EMAIL:"E-mail inválido.",
   MISSING_PASSWORD:"Digite a senha.", WEAK_PASSWORD:"A senha precisa ter pelo menos 6 caracteres.", USER_DISABLED:"Esta conta foi desativada.",
   TOO_MANY_ATTEMPTS_TRY_LATER:"Muitas tentativas. Espere alguns minutos e tente de novo.",
-  EXPIRED_OOB_CODE:"Este link para criar a senha nova expirou. Toque em Entrar e depois em Esqueci a senha para receber outro.",
-  INVALID_OOB_CODE:"Este link para criar a senha nova já foi usado. Toque em Entrar e depois em Esqueci a senha para receber outro."};
+  EXPIRED_OOB_CODE:"Este link para criar a senha nova expirou. Para alterar a senha, entre em contato com o desenvolvedor do app.",
+  INVALID_OOB_CODE:"Este link para criar a senha nova já foi usado. Para alterar a senha, entre em contato com o desenvolvedor do app."};
 async function fbAuth(op, body){
   let r; try { r = await fetch(FB.auth + op + "?key=" + FB.key, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)}); }
   catch(e){ throw new Error("Sem conexão com a internet. Tente de novo."); }
@@ -1365,6 +1367,7 @@ function openLogin(){
     <div class="f"><label for="lg-senha">Senha</label><input type="password" id="lg-senha" autocomplete="current-password" placeholder="Mínimo de 6 caracteres"></div>
     <label class="switch"><input type="checkbox" id="lg-aceite"> Estou ciente: a cada ${HIST_DIAS} dias o histórico de relatórios é limpo.</label>
     <p class="lg-err" id="lg-err" role="alert"></p>
+    <p class="lg-info" id="lg-info" role="status"></p>
     <div class="acts"><button class="btn" id="lg-criar" type="button">Criar conta</button><button class="btn pri" id="lg-entrar" type="button">Entrar</button></div>
     <button class="btn ghost sm" id="lg-esqueci" type="button">Esqueci a senha</button>`);
   const erro = m => { $("#lg-err").textContent = m || ""; };
@@ -1384,10 +1387,9 @@ function openLogin(){
   };
   $("#lg-entrar").onclick = () => vai(false);
   $("#lg-criar").onclick = () => vai(true);
-  $("#lg-esqueci").onclick = async () => {
-    const {email} = dados(); if(!email) return erro("Digite o seu e-mail acima e toque de novo em Esqueci a senha.");
-    try { await fbAuth("sendOobCode", {requestType:"PASSWORD_RESET", email}); erro(""); toast("Enviamos um e-mail para você criar uma senha nova"); }
-    catch(e){ erro(e.message); }
+  // o e-mail automático de redefinição não chega a todos (filtros dos e-mails corporativos): a troca é feita pelo desenvolvedor
+  $("#lg-esqueci").onclick = () => {
+    $("#lg-info").innerHTML = "Para alterar a sua senha, entre em contato com o desenvolvedor do app, <b>Emerson Costa</b>.";
   };
 }
 // link do e-mail "redefinir senha" (o Firebase manda para este app com ?mode=resetPassword&oobCode=...):
