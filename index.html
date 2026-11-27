@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v16"; window.APP_NEWS = [{"t":"Conta: celular e computador","d":"Entre com e-mail e senha para ver os mesmos relatórios em qualquer dispositivo."},{"t":"Relatórios antigos","d":"No primeiro login, o app oferece enviar para a conta os relatórios que já estão no aparelho."},{"t":"Histórico","d":"A cada 90 dias o histórico de relatórios é limpo."}];</script>
+<script>window.APP_CONFIG = {variant:"oficial", db:"checklist-campo"}; window.APP_VERSION = "v17"; window.APP_NEWS = [{"t":"Relatórios sobem sozinhos","d":"Ao entrar na conta, todos os relatórios do aparelho vão para a conta automaticamente."},{"t":"Sair com segurança","d":"Ao sair e apagar, o app só apaga do aparelho o que já está salvo na conta."},{"t":"Esqueci a senha","d":"O link do e-mail abre o app com uma janela para criar a senha nova."}];</script>
 <script src="logos.js"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -577,7 +577,7 @@ const ICON = {
   pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
 };
 let toastT;
-function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
+function toast(msg, ms){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),ms||2600); }
 function busy(on, txt){ $("#busy").hidden=!on; if(txt) $("#busyTxt").textContent=txt; }
 
 /* ============ armazenamento local criptografado ============
@@ -715,7 +715,9 @@ const stSave = st => kvSet("sync:" + conta.uid, st);
 const AUTH_MSG = {EMAIL_EXISTS:"Já existe uma conta com este e-mail. Toque em Entrar.", EMAIL_NOT_FOUND:"E-mail ou senha incorretos.",
   INVALID_PASSWORD:"E-mail ou senha incorretos.", INVALID_LOGIN_CREDENTIALS:"E-mail ou senha incorretos.", INVALID_EMAIL:"E-mail inválido.",
   MISSING_PASSWORD:"Digite a senha.", WEAK_PASSWORD:"A senha precisa ter pelo menos 6 caracteres.", USER_DISABLED:"Esta conta foi desativada.",
-  TOO_MANY_ATTEMPTS_TRY_LATER:"Muitas tentativas. Espere alguns minutos e tente de novo."};
+  TOO_MANY_ATTEMPTS_TRY_LATER:"Muitas tentativas. Espere alguns minutos e tente de novo.",
+  EXPIRED_OOB_CODE:"Este link para criar a senha nova expirou. Toque em Entrar e depois em Esqueci a senha para receber outro.",
+  INVALID_OOB_CODE:"Este link para criar a senha nova já foi usado. Toque em Entrar e depois em Esqueci a senha para receber outro."};
 async function fbAuth(op, body){
   let r; try { r = await fetch(FB.auth + op + "?key=" + FB.key, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)}); }
   catch(e){ throw new Error("Sem conexão com a internet. Tente de novo."); }
@@ -831,7 +833,7 @@ async function sync(){
         delete st.enviados[id]; delete apagados[id];
       }
       await kvSet("apagados", apagados);
-      for(const m of (await dbList()).filter(m => !m.broken && !st.soLocal.includes(m.id) && (st.enviados[m.id] || 0) < m.updatedAt)){
+      for(const m of (await dbList()).filter(m => !m.broken && (st.enviados[m.id] || 0) < m.updatedAt)){
         if(R && R.id === m.id && $("#saveState").textContent !== "Salvo") continue;   // ainda salvando: vai na próxima
         const r = await dbGet(m.id); if(r) await enviar(r, st);
       }
@@ -852,17 +854,13 @@ async function sair(perguntar){
   if(perguntar){ await sync().catch(() => {}); }
   conta = null; await contaSave(); renderSyncLine();
 }
-// primeiro login neste aparelho: oferece levar para a conta os relatórios que já estavam aqui
-async function oferecerEnvio(){
+// ao entrar, todos os relatórios deste aparelho vão para a conta automaticamente (sem perguntar: assim nenhum fica
+// de fora e se perde depois). Quem tinha escolhido "só neste aparelho" numa versão anterior também passa a enviar.
+async function prepararConta(){
   const st = await stLoad();
-  const locais = (await dbList()).filter(m => !m.broken && st.enviados[m.id] === undefined && !st.soLocal.includes(m.id));
-  st.desde = st.desde || Date.now();
-  if(!locais.length){ await stSave(st); return true; }
-  const ok = await confirmSheet(`Enviar ${locais.length} ${locais.length > 1 ? "relatórios" : "relatório"} deste aparelho para a sua conta?`,
-    "Assim você vê esses relatórios também no computador ou em outro celular. Se preferir, eles ficam só neste aparelho.", "Enviar para a conta");
-  if(!ok) st.soLocal = [...new Set(st.soLocal.concat(locais.map(m => m.id)))];
+  st.desde = st.desde || Date.now(); st.soLocal = [];
+  st.cursor = "";   // busca de novo tudo o que está na conta (o aparelho pode ter apagado relatórios ao sair)
   await stSave(st);
-  return ok;
 }
 
 const SKEY = "checklist-campo.settings";   // versões antigas guardavam os ajustes aqui, sem criptografia
@@ -1380,8 +1378,8 @@ function openLogin(){
     catch(e){ busy(false); return erro(e.message); }
     busy(false); closeSheet(); await kvSet("aceiteHistorico", {dias:HIST_DIAS, at:Date.now()});
     toast(criar ? "Conta criada" : "Conectado como " + conta.email);
-    await oferecerEnvio(); renderSyncLine();
-    busy(true, "Sincronizando seus relatórios…"); await sync(); busy(false);
+    await prepararConta(); renderSyncLine();
+    busy(true, "Enviando seus relatórios para a conta…"); await sync(); busy(false);
     if(!R) renderHome();
   };
   $("#lg-entrar").onclick = () => vai(false);
@@ -1392,18 +1390,51 @@ function openLogin(){
     catch(e){ erro(e.message); }
   };
 }
+// link do e-mail "redefinir senha" (o Firebase manda para este app com ?mode=resetPassword&oobCode=...):
+// mostra a janela para criar a senha nova e já entra na conta
+async function checkNovaSenha(){
+  const q = new URLSearchParams(location.search), code = q.get("oobCode");
+  if(q.get("mode") !== "resetPassword" || !code) return false;
+  history.replaceState(null, "", location.pathname);
+  let email = "";
+  try { email = (await fbAuth("resetPassword", {oobCode:code})).email; }
+  catch(e){ openSheet(`<h3>Link expirado</h3><p>${esc(e.message)}</p>
+      <div class="acts"><button class="btn pri" id="rs-ok" type="button">Entendi</button></div>`); $("#rs-ok").onclick = () => closeSheet(); return true; }
+  openSheet(`<h3>Criar senha nova</h3><p style="margin-top:0">Conta: <b>${esc(email)}</b></p>
+    <div class="f"><label for="rs-1">Nova senha</label><input type="password" id="rs-1" autocomplete="new-password" placeholder="Mínimo de 6 caracteres"></div>
+    <div class="f"><label for="rs-2">Repita a nova senha</label><input type="password" id="rs-2" autocomplete="new-password"></div>
+    <p class="lg-err" id="rs-err" role="alert"></p>
+    <div class="acts"><button class="btn pri" id="rs-ok" type="button">Salvar senha e entrar</button></div>`);
+  const erro = m => { $("#rs-err").textContent = m || ""; };
+  $("#rs-ok").onclick = async () => {
+    const a = $("#rs-1").value, b = $("#rs-2").value;
+    if(a.length < 6) return erro("A senha precisa ter pelo menos 6 caracteres.");
+    if(a !== b) return erro("As duas senhas não são iguais.");
+    busy(true, "Salvando a senha…");
+    try { await fbAuth("resetPassword", {oobCode:code, newPassword:a}); await entrar(email, a, false); }
+    catch(e){ busy(false); return erro(e.message); }
+    busy(false); closeSheet(); toast("Senha nova salva. Você entrou na sua conta", 3500);
+    await prepararConta(); renderSyncLine();
+    busy(true, "Enviando seus relatórios para a conta…"); await sync(); busy(false);
+    if(!R) renderHome();
+  };
+  return true;
+}
 function openSair(){
   openSheet(`<h3>Sair da conta?</h3>
-    <p>Os relatórios continuam na sua conta. Neste aparelho, você escolhe se eles ficam ou se são apagados (bom para computador compartilhado).</p>
+    <p>Os relatórios continuam na sua conta. Neste aparelho, você escolhe se eles ficam ou se são apagados (bom para computador compartilhado). Só é apagado daqui o que já está salvo na conta.</p>
     <div class="acts" style="flex-direction:column;align-items:stretch">
       <button class="btn pri" id="sa-manter" type="button">Sair e manter neste aparelho</button>
       <button class="btn danger" id="sa-apagar" type="button">Sair e apagar deste aparelho</button>
       <button class="btn ghost" id="sa-nao" type="button">Cancelar</button></div>`);
   $("#sa-nao").onclick = () => closeSheet();
   $("#sa-manter").onclick = async () => { closeSheet(); busy(true, "Saindo…"); await sair(true); busy(false); renderHome(); toast("Você saiu da conta"); };
-  $("#sa-apagar").onclick = async () => { closeSheet(); busy(true, "Saindo…"); await sair(true);
-    for(const m of await dbList()) await dbDel(m.id);
-    busy(false); renderHome(); toast("Você saiu da conta e os relatórios foram apagados deste aparelho"); };
+  // só apaga do aparelho o que a conta já tem na mesma versão; o resto fica, para nada se perder
+  $("#sa-apagar").onclick = async () => { closeSheet(); busy(true, "Saindo…"); await sync().catch(() => {});
+    const st = await stLoad(); let ficou = 0;
+    for(const m of await dbList()){ if(!m.broken && st.enviados[m.id] === m.updatedAt) await dbDel(m.id); else ficou++; }
+    await sair(false); busy(false); renderHome();
+    toast(ficou ? `Você saiu da conta. ${ficou} ${ficou > 1 ? "relatórios ainda não estavam" : "relatório ainda não estava"} na conta e ${ficou > 1 ? "continuam" : "continua"} neste aparelho.` : "Você saiu da conta e os relatórios foram apagados deste aparelho", 4000); };
 }
 // LGPD: apaga os relatórios e fotos da conta (app oficial e de teste) e a própria conta; os aparelhos ficam com a cópia deles
 async function excluirConta(){
@@ -1425,7 +1456,6 @@ async function contaHTML(){
   return `<div class="privbox conta-box"><b>Conta</b><span>Conectado como <b>${esc(conta.email)}</b>.</span>
     <span>A cada ${HIST_DIAS} dias o histórico de relatórios é limpo.</span>
     <div class="acts"><button class="btn sm" id="stSync" type="button">Sincronizar agora</button>
-      ${st.soLocal.length ? `<button class="btn sm" id="stEnviar" type="button">Enviar relatórios deste aparelho</button>` : ""}
       <button class="btn sm" id="stSair" type="button">Sair da conta</button>
       <button class="btn sm danger" id="stDelConta" type="button">Excluir minha conta</button></div></div>`;
 }
@@ -1451,7 +1481,7 @@ async function openPrivacy(required){
   sheetLocked = !!required;
   $("#pvOk").onclick = async () => { if(required){ await kvSet("privacy", {v:PRIVACY_V, at:Date.now()}); if(window.APP_VERSION) await kvSet("newsSeen", window.APP_VERSION); } closeSheet(); };
 }
-async function checkPrivacy(){ const p = await kvGet("privacy"); if(!p || p.v < PRIVACY_V) openPrivacy(true); else checkNews(); }
+async function checkPrivacy(){ if(await checkNovaSenha()) return; const p = await kvGet("privacy"); if(!p || p.v < PRIVACY_V) openPrivacy(true); else checkNews(); }
 
 /* ============ novidades da versão ============
    Depois de cada atualização, mostra uma vez um resumo curto do que mudou (lista em window.APP_NEWS,
@@ -1506,7 +1536,6 @@ async function openSettings(){
   const on = (id, fn) => { const b = $(id); if(b) b.onclick = fn; };
   on("#stLogin", () => { closeSheet(); openLogin(); });
   on("#stSync", async () => { busy(true, "Sincronizando…"); await sync(); busy(false); toast(syncSt.msg); });
-  on("#stEnviar", async () => { const st = await stLoad(); st.soLocal = []; await stSave(st); closeSheet(); busy(true, "Enviando relatórios…"); await sync(); busy(false); toast(syncSt.msg); });
   on("#stSair", () => openSair());
   on("#stDelConta", () => excluirConta());
   $("#stWipe").onclick = async () => {
